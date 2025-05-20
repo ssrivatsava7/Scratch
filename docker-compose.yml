@@ -1,0 +1,15 @@
+version: "3.9"
+services:
+  python_service:
+    build:
+      context: ./python
+    volumes:
+      - /tmp:/tmp
+
+  golang_service:
+    build:
+      context: ./golang
+    depends_on:
+      - python_service
+    volumes:
+      - /tmp:/tmp
