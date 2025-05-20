@@ -1,20 +1,12 @@
 import socket
-import os
+import time
 
 SOCKET_FILE = "/tmp/shared_socket"
 
-# Remove socket file if it already exists
-if os.path.exists(SOCKET_FILE):
-    os.remove(SOCKET_FILE)
+# Wait to ensure the Go server is up
+time.sleep(2)
 
-# Create socket
-server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-server.bind(SOCKET_FILE)
-server.listen(1)
-
-print("Python server listening on Unix socket...")
-
-conn, _ = server.accept()
-msg = conn.recv(1024)
-print(f"Python received: {msg.decode()}")
-conn.close()
+client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+client.connect(SOCKET_FILE)
+client.sendall(b"Hello from Python!")
+client.close()
