@@ -1,62 +1,36 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
-	"os"
 
-	"github.com/gofiber/fiber/v2"
+	pb "github.com/snigd/Scratch-main/golang/proto"
+
+	"google.golang.org/grpc"
 )
 
-func handleConnection(conn net.Conn) {
-	defer conn.Close()
-	buf := make([]byte, 1024)
-	n, err := conn.Read(buf)
-	if err != nil {
-		fmt.Println("Read error:", err)
-		return
-	}
-	fmt.Printf("Received via Unix socket: %q\n", string(buf[:n]))
+type server struct {
+	pb.UnimplementedGreeterServer
 }
 
-func startUnixSocketServer() {
-	socketPath := "/tmp/shared_socket"
-
-	if _, err := os.Stat(socketPath); err == nil {
-		os.Remove(socketPath)
-	}
-
-	listener, err := net.Listen("unix", socketPath)
-	if err != nil {
-		log.Fatalf("Listen error: %v", err)
-	}
-	defer listener.Close()
-
-	fmt.Println("Go server listening on Unix socket...")
-
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			fmt.Println("Accept error:", err)
-			continue
-		}
-		go handleConnection(conn)
-	}
-}
-
-func startFiberServer() {
-	app := fiber.New()
-
-	app.Get("/hello", func(c *fiber.Ctx) error {
-		return c.SendString("hello from gofiber")
-	})
-
-	fmt.Println("Fiber HTTP server running on port 8080...")
-	log.Fatal(app.Listen(":8080"))
+func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
+	fmt.Printf("Received request from: %v\n", in.Name)
+	return &pb.HelloReply{Message: "Hello " + in.Name + " from Go gRPC server!"}, nil
 }
 
 func main() {
-	go startUnixSocketServer()
-	startFiberServer()
+	lis, err := net.Listen("tcp", ":50051")
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+
+	grpcServer := grpc.NewServer()
+	pb.RegisterGreeterServer(grpcServer, &server{})
+
+	fmt.Println("gRPC server listening on :50051")
+	if err := grpcServer.Serve(lis); err != nil {
+		log.Fatalf("failed to serve gRPC: %v", err)
+	}
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:grpc/grpc.dart';
+
+import 'src/generated/message.pbgrpc.dart'; // Make sure this path matches your generated Dart files
 
 void main() {
   runApp(const MyApp());
@@ -26,38 +28,50 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  String message = "Loading...";
-
-  @override
-  void initState() {
-    super.initState();
-    fetchHelloMessage();
-  }
+  String message = "Press button to get greeting";
 
   Future<void> fetchHelloMessage() async {
+    final channel = ClientChannel(
+      '10.0.2.2', // Use 10.0.2.2 if running on Android emulator; 'localhost' for iOS simulator
+      port: 50051,
+      options: const ChannelOptions(credentials: ChannelCredentials.insecure()),
+    );
+
+    final stub = GreeterClient(channel);
+
     try {
-      final response = await http.get(Uri.parse('http://localhost:8080/hello'));
-      if (response.statusCode == 200) {
-        setState(() {
-          message = response.body;
-        });
-      } else {
-        setState(() {
-          message = "Error: ${response.statusCode}";
-        });
-      }
+      final response = await stub.sayHello(
+        HelloRequest()..name = 'Flutter User',
+      );
+      setState(() {
+        message = response.message;
+      });
     } catch (e) {
       setState(() {
-        message = "Failed to connect to backend: $e";
+        message = "Error calling gRPC server: $e";
       });
     }
+
+    await channel.shutdown();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("GoFiber Flutter Client")),
-      body: Center(child: Text(message)),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(message),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: fetchHelloMessage,
+              child: const Text('Say Hello via gRPC'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
