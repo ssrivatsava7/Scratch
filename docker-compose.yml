@@ -13,3 +13,5 @@ services:
       - python_service
     volumes:
       - /tmp:/tmp
+    ports:
+      - "8080:8080"  # Expose the GoFiber web server

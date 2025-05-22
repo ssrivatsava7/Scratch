@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"os"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 func handleConnection(conn net.Conn) {
@@ -14,22 +17,19 @@ func handleConnection(conn net.Conn) {
 		fmt.Println("Read error:", err)
 		return
 	}
-	fmt.Printf("Go received: %s\n", string(buf[:n]))
+	fmt.Printf("Received via Unix socket: %q\n", string(buf[:n]))
 }
 
-func main() {
+func startUnixSocketServer() {
 	socketPath := "/tmp/shared_socket"
 
-	// Remove socket file if it already exists
 	if _, err := os.Stat(socketPath); err == nil {
 		os.Remove(socketPath)
 	}
 
-	// Listen on Unix socket
 	listener, err := net.Listen("unix", socketPath)
 	if err != nil {
-		fmt.Println("Listen error:", err)
-		os.Exit(1)
+		log.Fatalf("Listen error: %v", err)
 	}
 	defer listener.Close()
 
@@ -41,6 +41,22 @@ func main() {
 			fmt.Println("Accept error:", err)
 			continue
 		}
-		go handleConnection(conn) // handle each connection concurrently
+		go handleConnection(conn)
 	}
+}
+
+func startFiberServer() {
+	app := fiber.New()
+
+	app.Get("/hello", func(c *fiber.Ctx) error {
+		return c.SendString("hello from gofiber")
+	})
+
+	fmt.Println("Fiber HTTP server running on port 8080...")
+	log.Fatal(app.Listen(":8080"))
+}
+
+func main() {
+	go startUnixSocketServer()
+	startFiberServer()
 }
