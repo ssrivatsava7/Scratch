@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:grpc/grpc.dart';
 
-import 'src/generated/message.pbgrpc.dart'; // Make sure this path matches your generated Dart files
+import 'chart_painter.dart';
+import 'data_controller.dart';
+import 'src/generated/message.pbgrpc.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,27 +15,60 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'GoFiber Demo',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const MyHomePage(),
+    return GetMaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Flutter + gRPC + Chart',
+      theme: ThemeData.dark(),
+      home: const MainScreen(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MainScreenState extends State<MainScreen> {
+  int _index = 0;
+
+  final screens = [const GrpcScreen(), ChartScreen()];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: screens[_index],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _index,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.message), label: 'gRPC'),
+          BottomNavigationBarItem(icon: Icon(Icons.show_chart), label: 'Chart'),
+        ],
+        onTap: (value) {
+          setState(() {
+            _index = value;
+          });
+        },
+      ),
+    );
+  }
+}
+
+class GrpcScreen extends StatefulWidget {
+  const GrpcScreen({super.key});
+
+  @override
+  State<GrpcScreen> createState() => _GrpcScreenState();
+}
+
+class _GrpcScreenState extends State<GrpcScreen> {
   String message = "Press button to get greeting";
 
   Future<void> fetchHelloMessage() async {
     final channel = ClientChannel(
-      '10.0.2.2', // Use 10.0.2.2 if running on Android emulator; 'localhost' for iOS simulator
+      '10.0.2.2', // For Android Emulator
       port: 50051,
       options: const ChannelOptions(credentials: ChannelCredentials.insecure()),
     );
@@ -58,7 +94,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("GoFiber Flutter Client")),
+      appBar: AppBar(title: const Text("gRPC Greeting")),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -72,6 +108,26 @@ class _MyHomePageState extends State<MyHomePage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class ChartScreen extends StatelessWidget {
+  final DataController controller = Get.put(DataController());
+
+  ChartScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(title: const Text("Real-Time Chart")),
+      body: Obx(() {
+        return CustomPaint(
+          painter: ChartPainter(List.from(controller.data)),
+          size: Size.infinite,
+        );
+      }),
     );
   }
 }
