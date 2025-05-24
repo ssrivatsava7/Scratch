@@ -16,13 +16,45 @@ class ChartPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: Obx(() {
-        return CustomPaint(
-          painter: ChartPainter(List.from(controller.data)),
-          size: Size.infinite,
-        );
-      }),
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          Center(
+            child: Container(
+              height: 300,
+              width: double.infinity,
+              color: Colors.black,
+              child: Obx(() {
+                return CustomPaint(
+                  painter: ChartPainter(List.from(controller.data)),
+                  size: Size.infinite,
+                );
+              }),
+            ),
+          ),
+          Positioned(
+            top: 16,
+            left: 16,
+            child: Obx(() {
+              return Text(
+                'FPS: ${controller.fps.toStringAsFixed(1)}',
+                style: const TextStyle(
+                  color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  shadows: [
+                    Shadow(
+                      offset: Offset(1, 1),
+                      blurRadius: 2,
+                      color: Colors.black54,
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
     );
   }
 }
