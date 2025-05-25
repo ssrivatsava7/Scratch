@@ -9,18 +9,18 @@ class ChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (data.isEmpty) return;
 
-    final Paint linePaint = Paint()
+    final paint = Paint()
       ..color = Colors.cyanAccent
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
 
-    final Path path = Path();
-    final double dx = size.width / data.length;
-    final double maxY = 100;
+    final path = Path();
+    final dx = size.width / data.length;
+    const maxY = 100;
 
     for (int i = 0; i < data.length; i++) {
-      double x = i * dx;
-      double y = size.height * (1 - (data[i] / maxY));
+      final x = i * dx;
+      final y = size.height * (1 - (data[i] / maxY));
       if (i == 0) {
         path.moveTo(x, y);
       } else {
@@ -28,7 +28,7 @@ class ChartPainter extends CustomPainter {
       }
     }
 
-    canvas.drawPath(path, linePaint);
+    canvas.drawPath(path, paint);
   }
 
   @override

@@ -1,5 +1,6 @@
-import 'dart:async';
+import 'dart:math';
 
+import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 
 class DataController extends GetxController {
@@ -8,23 +9,26 @@ class DataController extends GetxController {
 
   int _frameCount = 0;
   late DateTime _lastTime;
-  late Timer _dataTimer;
+  late Ticker _ticker;
 
   @override
   void onInit() {
     super.onInit();
     _lastTime = DateTime.now();
 
-    // Start timer to update data every 8 ms (~120 FPS)
-    _dataTimer = Timer.periodic(Duration(milliseconds: 8), (_) {
-      updateData(); // public method called here
-    });
+    _ticker = Ticker(_onTick)..start(); // Start the ticker
   }
 
-  @override
-  void onClose() {
-    _dataTimer.cancel();
-    super.onClose();
+  void _onTick(Duration elapsed) {
+    frameRendered(); // Call your frame tracking logic
+
+    if (data.length >= 500) {
+      data.removeAt(0);
+    }
+
+    // Simulate a sine wave point (range: 0–100)
+    double t = (elapsed.inMilliseconds % 1000) / 1000 * 2 * pi;
+    data.add(sin(t) * 50 + 50); // value from 0 to 100
   }
 
   void frameRendered() {
@@ -39,18 +43,9 @@ class DataController extends GetxController {
     }
   }
 
-  // public method now
-  void updateData() {
-    final now = DateTime.now();
-
-    // Example: generate random data between 0 and 100
-    double newValue = (100 * (now.millisecond / 1000));
-
-    if (data.length > 200) {
-      data.removeAt(0);
-    }
-    data.add(newValue);
-
-    frameRendered();
+  @override
+  void onClose() {
+    _ticker.dispose();
+    super.onClose();
   }
 }

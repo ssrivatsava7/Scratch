@@ -19,29 +19,32 @@ class ChartPage extends StatelessWidget {
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          Center(
-            child: Container(
-              height: 300,
-              width: double.infinity,
-              color: Colors.black,
-              child: Obx(() {
-                return CustomPaint(
-                  painter: ChartPainter(List.from(controller.data)),
-                  size: Size.infinite,
-                );
-              }),
-            ),
+          Column(
+            children: [
+              const SizedBox(height: 60), // Padding for FPS display
+              Expanded(
+                child: Container(
+                  color: Colors.black,
+                  child: Obx(() {
+                    return CustomPaint(
+                      painter: ChartPainter(List.from(controller.data)),
+                      size: Size.infinite,
+                    );
+                  }),
+                ),
+              ),
+            ],
           ),
           Positioned(
             top: 16,
             left: 16,
-            child: Obx(() {
-              return Text(
-                'FPS: ${controller.fps.toStringAsFixed(1)}',
+            child: Obx(
+              () => Text(
+                'FPS: ${controller.fps.value.toStringAsFixed(1)}',
                 style: const TextStyle(
                   color: Colors.green,
-                  fontWeight: FontWeight.bold,
                   fontSize: 18,
+                  fontWeight: FontWeight.bold,
                   shadows: [
                     Shadow(
                       offset: Offset(1, 1),
@@ -50,8 +53,8 @@ class ChartPage extends StatelessWidget {
                     ),
                   ],
                 ),
-              );
-            }),
+              ),
+            ),
           ),
         ],
       ),
