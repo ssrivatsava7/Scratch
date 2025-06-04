@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/audio_controller.dart';
+import 'video_player_screen.dart';
 
 class AudioPlayerScreen extends StatelessWidget {
   final AudioController audioController = Get.put(AudioController());
@@ -12,12 +13,12 @@ class AudioPlayerScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Dopamine 2.0 - YouTube Audio Player"),
+        title: const Text("Dopamine 2.0 - YouTube Audio Player"),
         backgroundColor: Colors.blue,
       ),
       body: Column(
         children: [
-          // Search bar for entering song name
+          // Search bar
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
@@ -28,12 +29,10 @@ class AudioPlayerScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 suffixIcon: IconButton(
-                  icon: Icon(Icons.search),
+                  icon: const Icon(Icons.search),
                   onPressed: () {
                     if (searchController.text.trim().isNotEmpty) {
-                      audioController.searchVideos(
-                        searchController.text.trim(),
-                      );
+                      audioController.searchVideos(searchController.text.trim());
                     }
                   },
                 ),
@@ -50,8 +49,8 @@ class AudioPlayerScreen extends StatelessWidget {
           Obx(() {
             if (audioController.currentError.value.isNotEmpty) {
               return Container(
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                padding: EdgeInsets.all(12),
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.red.shade100,
                   borderRadius: BorderRadius.circular(8),
@@ -59,8 +58,8 @@ class AudioPlayerScreen extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.error, color: Colors.red),
-                    SizedBox(width: 8),
+                    const Icon(Icons.error, color: Colors.red),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         audioController.currentError.value,
@@ -68,56 +67,50 @@ class AudioPlayerScreen extends StatelessWidget {
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.close, color: Colors.red),
+                      icon: const Icon(Icons.close, color: Colors.red),
                       onPressed: () => audioController.clearError(),
                     ),
                   ],
                 ),
               );
             }
-            return SizedBox.shrink();
+            return const SizedBox.shrink();
           }),
 
           // Loading indicator
           Obx(() {
             if (audioController.isLoading.value) {
-              return Container(
+              return const Padding(
                 padding: EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(width: 16),
-                    Text("Loading audio..."),
-                  ],
-                ),
+                child: CircularProgressIndicator(),
               );
             }
-            return SizedBox.shrink();
+            return const SizedBox.shrink();
           }),
 
-          // Playback controls (when audio is loaded)
+          // Playback controls
           Obx(() {
             if (audioController.isPlaying.value) {
-              return Container(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.pause, size: 32),
-                      onPressed: () => audioController.togglePlayback(),
-                    ),
-                    SizedBox(width: 16),
-                    IconButton(
-                      icon: Icon(Icons.stop, size: 32),
-                      onPressed: () => audioController.stopPlayback(),
-                    ),
-                  ],
-                ),
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.pause, size: 32),
+                    onPressed: () => audioController.togglePlayback(),
+                  ),
+                  const SizedBox(width: 16),
+                  IconButton(
+                    icon: const Icon(Icons.stop, size: 32),
+                    onPressed: () => audioController.stopPlayback(),
+                  ),
+                ],
+              );
+            } else {
+              return IconButton(
+                icon: const Icon(Icons.play_arrow, size: 48),
+                onPressed: () => audioController.togglePlayback(),
               );
             }
-            return SizedBox.shrink();
           }),
 
           // Display search results
@@ -128,8 +121,8 @@ class AudioPlayerScreen extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.music_note, size: 64, color: Colors.grey),
-                      SizedBox(height: 16),
+                      const Icon(Icons.music_note, size: 64, color: Colors.grey),
+                      const SizedBox(height: 16),
                       Text(
                         "Search for songs to get started!",
                         style: TextStyle(
@@ -143,14 +136,14 @@ class AudioPlayerScreen extends StatelessWidget {
               }
 
               return ListView.builder(
-                padding: EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 itemCount: audioController.searchResults.length,
                 itemBuilder: (context, index) {
                   var video = audioController.searchResults[index];
                   return Card(
-                    margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                    margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                     child: ListTile(
-                      leading: CircleAvatar(
+                      leading: const CircleAvatar(
                         backgroundColor: Colors.blue,
                         child: Icon(Icons.music_note, color: Colors.white),
                       ),
@@ -166,14 +159,25 @@ class AudioPlayerScreen extends StatelessWidget {
                           if (video.duration != null)
                             Text(
                               "${video.duration!.inMinutes}:${(video.duration!.inSeconds % 60).toString().padLeft(2, '0')}",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
                             ),
                         ],
                       ),
-                      trailing: Icon(Icons.play_arrow),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.video_library),
+                            onPressed: () {
+                              Get.to(() => VideoPlayerScreen(
+                                    videoId: video.id.toString(),
+                                    videoTitle: video.title,
+                                  ));
+                            },
+                          ),
+                          const Icon(Icons.play_arrow),
+                        ],
+                      ),
                       onTap: () {
                         audioController.loadAudio(video.id.toString());
                       },
