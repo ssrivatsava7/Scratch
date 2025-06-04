@@ -40,7 +40,9 @@ class AudioController extends GetxController {
       var manifest = await yt.videos.streamsClient.getManifest(video.id);
       var audioStreamInfo = manifest.audioOnly.withHighestBitrate();
 
-      if (audioStreamInfo == null) throw Exception('No audio stream found');
+      if (audioStreamInfo == null) {
+        throw Exception('No audio stream found. Video might be age-restricted or unavailable.');
+      }
 
       await _player.open(Media(audioStreamInfo.url.toString()));
       _player.play();

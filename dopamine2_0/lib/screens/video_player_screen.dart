@@ -1,79 +1,73 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:youtube_explode_dart/youtube_explode_dart.dart' as yt;
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-import '../controllers/youtube_media_controller.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
   final String videoId;
   final String videoTitle;
 
   const VideoPlayerScreen({
-    Key? key,
+    super.key, 
     required this.videoId,
     required this.videoTitle,
-  }) : super(key: key);
+  });
 
   @override
   State<VideoPlayerScreen> createState() => _VideoPlayerScreenState();
 }
 
 class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
-  late final player = Player(
-    configuration: const PlayerConfiguration(
-      bufferSize: 1024 * 1024, // 1MB buffer for faster start
-      title: 'Dopamine Video Player',
-    ),
-  );
-  late final controller = VideoController(player);
-  final ytController = Get.put(YouTubeMediaController());
-  bool isInitialized = false;
-  String? errorMessage;
+  late final Player _player;
+  late final VideoController _controller;
+  bool _isLoading = true;
+  bool _isPlaying = false;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
+    _player = Player();
+    _controller = VideoController(_player);
     _initializePlayer();
   }
 
   Future<void> _initializePlayer() async {
-    int retryCount = 0;
-    const maxRetries = 3;
-
-    while (retryCount < maxRetries) {
+    try {
+      var youtube = yt.YoutubeExplode();
       try {
-        final videoDetails = await ytController.getVideoDetails(widget.videoId);
+        var manifest = await youtube.videos.streamsClient.getManifest(widget.videoId);
+        var muxedStream = manifest.muxed.withHighestBitrate();
 
-        // Configure player for the specific stream
-        await player.setPlaylistMode(PlaylistMode.single);
-        await player.open(
-          Media(
-            videoDetails['url'],
-            httpHeaders: {
-              'Referer': 'https://www.youtube.com',
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            },
-          ),
-        );
-
-        setState(() => isInitialized = true);
-        break;
-      } catch (e) {
-        print('Attempt ${retryCount + 1} failed: $e');
-        retryCount++;
-
-        if (retryCount == maxRetries) {
-          setState(() => errorMessage = e.toString());
-          Get.snackbar(
-            'Error',
-            'Failed to load video after $maxRetries attempts',
-            snackPosition: SnackPosition.BOTTOM,
-          );
-        } else {
-          await Future.delayed(Duration(seconds: 1));
+        if (muxedStream == null) {
+          throw Exception('No playable stream found. Video may be restricted.');
         }
+
+        await _player.open(Media(muxedStream.url.toString()));
+        _player.play();
+
+        if (!mounted) return;
+        setState(() {
+          _isPlaying = true;
+          _isLoading = false;
+        });
+      } finally {
+        youtube.close();
       }
+    } catch (e) {
+      print('Error: $e');
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Failed to play video. This video may be restricted or unavailable.';
+        _isLoading = false;
+      });
     }
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
   }
 
   @override
@@ -81,35 +75,76 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.videoTitle),
-        actions: [
-          IconButton(
-            icon: StreamBuilder(
-              stream: player.stream.playing,
-              builder: (context, snapshot) {
-                final playing = snapshot.data ?? false;
-                return Icon(playing ? Icons.pause : Icons.play_arrow);
-              },
-            ),
-            onPressed: () => player.playOrPause(),
-          ),
-        ],
       ),
       body: Center(
-        child: isInitialized
-            ? Video(
-                controller: controller,
-                controls: AdaptiveVideoControls, // Native controls
-              )
-            : errorMessage != null
-                ? Text('Error: $errorMessage')
-                : CircularProgressIndicator(),
+        child: _isLoading
+            ? const CircularProgressIndicator()
+            : _errorMessage != null
+                ? Container(
+                    margin: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.red.shade300),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error, color: Colors.red),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _errorMessage!,
+                            style: TextStyle(color: Colors.red.shade700),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Video(
+                          controller: _controller,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          IconButton(
+                            icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow, size: 32),
+                            onPressed: () {
+                              if (!mounted) return;
+                              setState(() {
+                                if (_isPlaying) {
+                                  _player.pause();
+                                } else {
+                                  _player.play();
+                                }
+                                _isPlaying = !_isPlaying;
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 16),
+                          IconButton(
+                            icon: const Icon(Icons.stop, size: 32),
+                            onPressed: () {
+                              _player.stop();
+                              if (!mounted) return;
+                              setState(() {
+                                _isPlaying = false;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    player.dispose();
-    super.dispose();
   }
 }

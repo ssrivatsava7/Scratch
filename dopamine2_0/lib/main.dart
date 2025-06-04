@@ -4,10 +4,8 @@ import 'package:media_kit/media_kit.dart';
 import 'screens/audio_player_screen.dart';
 
 void main() {
-  // Must call this before any other media_kit usage
   WidgetsFlutterBinding.ensureInitialized();
-  MediaKit.ensureInitialized(); // remove 'await' here
-
+  MediaKit.ensureInitialized();
   runApp(const DopamineApp());
 }
 
