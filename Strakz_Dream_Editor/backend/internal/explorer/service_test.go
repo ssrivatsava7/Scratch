@@ -7,12 +7,13 @@ import (
 )
 
 func TestListDir(t *testing.T) {
-	// Setup
+	svc := Service{} // Use Service
+
 	tmpDir := t.TempDir()
 	os.WriteFile(filepath.Join(tmpDir, "file1.txt"), []byte("test"), 0644)
 	os.Mkdir(filepath.Join(tmpDir, "subdir"), 0755)
 
-	files, err := ListDir(tmpDir)
+	files, err := svc.ListDir(tmpDir)
 	if err != nil {
 		t.Fatalf("ListDir failed: %v", err)
 	}
@@ -31,13 +32,15 @@ func TestListDir(t *testing.T) {
 }
 
 func TestReadRawFile(t *testing.T) {
+	svc := Service{} // Use Service
+
 	content := []byte("hello world")
 	tmpFile := filepath.Join(t.TempDir(), "readme.txt")
 	if err := os.WriteFile(tmpFile, content, 0644); err != nil {
 		t.Fatal(err)
 	}
 
-	data, err := ReadRawFile(tmpFile)
+	data, err := svc.ReadRawFile(tmpFile)
 	if err != nil {
 		t.Fatalf("ReadRawFile failed: %v", err)
 	}

@@ -9,7 +9,7 @@ import (
 )
 
 var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool { return true }, // no auth/security
+	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
 func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
@@ -20,6 +20,7 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
+	svc := &Service{} // Changed to pointer
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
@@ -38,7 +39,7 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 		switch req.Cmd {
 		case "list":
-			files, err := ListDir(req.Path)
+			files, err := svc.ListDir(req.Path)
 			if err != nil {
 				conn.WriteJSON(map[string]string{"error": err.Error()})
 				continue
@@ -46,7 +47,7 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 			conn.WriteJSON(files)
 
 		case "read":
-			data, err := ReadRawFile(req.Path)
+			data, err := svc.ReadRawFile(req.Path)
 			if err != nil {
 				conn.WriteJSON(map[string]string{"error": err.Error()})
 				continue

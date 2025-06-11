@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"yourapp/pkg/utils"
+	"backend/pkg/utils"
 )
 
 // FileEntry represents a file or folder in the explorer.
