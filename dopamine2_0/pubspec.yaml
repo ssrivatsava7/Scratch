@@ -30,17 +30,27 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  
+  # State management
   get: ^4.6.6
-  media_kit: ^1.1.7                  # Primary package
-  media_kit_video: ^1.2.4             # For video rendering
-  media_kit_libs_windows_video: ^1.0.9 # Windows package
-  media_kit_libs_windows: ^1.0.5
-  youtube_explode_dart: ^2.4.2
+  
+  # Media playback
+  media_kit: ^1.1.7                    # Primary package
+  media_kit_video: ^1.2.4              # For video rendering
+  media_kit_libs_windows_video: ^1.0.9 # Windows video support
+  media_kit_libs_windows: ^1.0.5       # Windows audio support
+  just_audio: ^0.9.35                  # Alternative audio backend
+  
+  # YouTube integration
+  youtube_explode_dart: ^2.4.2         # YouTube data extraction
+  
+  # Networking
   http: ^1.1.0
-  just_audio: ^0.9.35
-  webview_windows: ^0.2.0
-  cupertino_icons: ^1.0.8
-  wakelock_plus: ^1.1.4
+  
+  # Platform-specific
+  webview_windows: ^0.2.0              # Windows webview
+  cupertino_icons: ^1.0.8              # iOS style icons
+  wakelock_plus: ^1.1.4                # Prevent sleep during playback
 
 dependency_overrides:
   win32: ^5.0.0
