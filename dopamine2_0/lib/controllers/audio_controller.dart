@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import '../models/video_item.dart';
 import '../services/storage_service.dart';
 import 'history_controller.dart';
@@ -13,16 +14,45 @@ class AudioController extends GetxController {
   RxString currentError = ''.obs;
   RxList<Video> searchResults = <Video>[].obs;
   Rx<VideoItem?> currentVideo = Rx<VideoItem?>(null);
+  RxBool backgroundPlaybackEnabled = true.obs;
 
   @override
   void onInit() {
     _player = Player();
     _storage.init();
+    _loadBackgroundPlaybackPreference();
     super.onInit();
+  }
+
+  Future<void> _loadBackgroundPlaybackPreference() async {
+    // Load preference from storage if needed
+    // For now, default to enabled
+    backgroundPlaybackEnabled.value = true;
+  }
+
+  void toggleBackgroundPlayback() {
+    backgroundPlaybackEnabled.value = !backgroundPlaybackEnabled.value;
+    if (backgroundPlaybackEnabled.value && isPlaying.value) {
+      WakelockPlus.enable();
+    } else {
+      WakelockPlus.disable();
+    }
   }
 
   void togglePlayback() {
     if (isPlaying.value) {
+      _player.pause();
+      if (backgroundPlaybackEnabled.value) {
+        WakelockPlus.disable();
+      }
+    } else {
+      _player.play();
+      if (backgroundPlaybackEnabled.value) {
+        WakelockPlus.enable();
+      }
+    }
+    isPlaying.value = !isPlaying.value;
+  }
       _player.pause();
     } else {
       _player.play();
@@ -81,6 +111,11 @@ class AudioController extends GetxController {
       await _player.open(Media(audioUrl));
       _player.play();
       isPlaying.value = true;
+      
+      // Enable wakelock for background playback
+      if (backgroundPlaybackEnabled.value) {
+        WakelockPlus.enable();
+      }
       
       // Create video item and add to history
       final videoItem = VideoItem(
@@ -145,6 +180,9 @@ class AudioController extends GetxController {
   void stopPlayback() {
     _player.stop();
     isPlaying.value = false;
+    if (backgroundPlaybackEnabled.value) {
+      WakelockPlus.disable();
+    }
   }
 
   void clearError() {
@@ -154,6 +192,7 @@ class AudioController extends GetxController {
   @override
   void onClose() {
     _player.dispose();
+    WakelockPlus.disable();
     super.onClose();
   }
 }

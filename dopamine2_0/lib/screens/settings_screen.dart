@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/youtube_media_controller.dart';
+import '../controllers/audio_controller.dart';
 import '../widgets/quality_selector.dart';
 
 class SettingsScreen extends StatelessWidget {
   final YouTubeMediaController mediaController = Get.find<YouTubeMediaController>();
+  final AudioController audioController = Get.find<AudioController>();
 
   SettingsScreen({super.key});
 
@@ -17,6 +19,29 @@ class SettingsScreen extends StatelessWidget {
       ),
       body: ListView(
         children: [
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              'Playback',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Obx(() {
+            return SwitchListTile(
+              secondary: const Icon(Icons.play_circle_outline),
+              title: const Text('Background Playback'),
+              subtitle: const Text('Keep playing audio when app is minimized'),
+              value: audioController.backgroundPlaybackEnabled.value,
+              onChanged: (value) {
+                audioController.toggleBackgroundPlayback();
+              },
+            );
+          }),
+          const Divider(),
+          
           const Padding(
             padding: EdgeInsets.all(16.0),
             child: Text(
@@ -71,7 +96,12 @@ class SettingsScreen extends StatelessWidget {
           const ListTile(
             leading: Icon(Icons.description),
             title: Text('Dopamine 2.0'),
-            subtitle: Text('YouTube Audio & Video Player'),
+            subtitle: Text('YouTube Audio & Video Player with Enhanced Features'),
+          ),
+          const ListTile(
+            leading: Icon(Icons.stars),
+            title: Text('Features'),
+            subtitle: Text('Favorites • Playlists • History • Downloads • Background Playback'),
           ),
         ],
       ),

@@ -6,6 +6,7 @@ import '../controllers/playlist_controller.dart';
 import '../controllers/download_controller.dart';
 import '../models/video_item.dart';
 import 'video_player_screen.dart';
+import 'settings_screen.dart';
 
 class AudioPlayerScreen extends StatelessWidget {
   final AudioController audioController = Get.put(AudioController());
@@ -22,6 +23,14 @@ class AudioPlayerScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text("Dopamine 2.0 - YouTube Audio Player"),
         backgroundColor: Colors.blue,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Get.to(() => SettingsScreen());
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
