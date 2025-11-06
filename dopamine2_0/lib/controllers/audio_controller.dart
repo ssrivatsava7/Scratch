@@ -53,12 +53,6 @@ class AudioController extends GetxController {
     }
     isPlaying.value = !isPlaying.value;
   }
-      _player.pause();
-    } else {
-      _player.play();
-    }
-    isPlaying.value = !isPlaying.value;
-  }
 
   Future<void> loadAudio(String videoId, {String? title, String? author}) async {
     isLoading.value = true;
