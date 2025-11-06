@@ -51,6 +51,17 @@ dependencies:
   webview_windows: ^0.2.0              # Windows webview
   cupertino_icons: ^1.0.8              # iOS style icons
   wakelock_plus: ^1.1.4                # Prevent sleep during playback
+  
+  # Storage & persistence
+  shared_preferences: ^2.2.2           # Key-value storage
+  path_provider: ^2.1.1                # File system paths
+  
+  # Background playback
+  audio_service: ^0.18.12              # Background audio service
+  
+  # Downloads
+  dio: ^5.4.0                          # Advanced HTTP client for downloads
+  permission_handler: ^11.1.0          # Runtime permissions
 
 dependency_overrides:
   win32: ^5.0.0

@@ -1,17 +1,23 @@
 import 'package:get/get.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import '../models/video_item.dart';
+import '../services/storage_service.dart';
+import 'history_controller.dart';
 
 class AudioController extends GetxController {
   late final Player _player;
+  final StorageService _storage = StorageService();
   RxBool isPlaying = false.obs;
   RxBool isLoading = false.obs;
   RxString currentError = ''.obs;
   RxList<Video> searchResults = <Video>[].obs;
+  Rx<VideoItem?> currentVideo = Rx<VideoItem?>(null);
 
   @override
   void onInit() {
     _player = Player();
+    _storage.init();
     super.onInit();
   }
 
@@ -24,12 +30,35 @@ class AudioController extends GetxController {
     isPlaying.value = !isPlaying.value;
   }
 
-  Future<void> loadAudio(String videoId) async {
+  Future<void> loadAudio(String videoId, {String? title, String? author}) async {
     isLoading.value = true;
     currentError.value = '';
     YoutubeExplode? yt;
 
     try {
+      // Check cache first
+      final cachedData = await _storage.getCachedUrl(videoId);
+      
+      if (cachedData != null) {
+        await _player.open(Media(cachedData['url']));
+        _player.play();
+        isPlaying.value = true;
+        
+        // Update current video and add to history
+        if (title != null && author != null) {
+          final videoItem = VideoItem(
+            id: videoId,
+            title: title,
+            author: author,
+          );
+          currentVideo.value = videoItem;
+          _addToHistory(videoItem);
+        }
+        
+        isLoading.value = false;
+        return;
+      }
+
       yt = YoutubeExplode();
 
       var video = await yt.videos.get(videoId);
@@ -44,9 +73,25 @@ class AudioController extends GetxController {
         throw Exception('No audio stream found. Video might be age-restricted or unavailable.');
       }
 
-      await _player.open(Media(audioStreamInfo.url.toString()));
+      final audioUrl = audioStreamInfo.url.toString();
+      
+      // Cache the URL
+      await _storage.cacheUrl(videoId, audioUrl, {});
+
+      await _player.open(Media(audioUrl));
       _player.play();
       isPlaying.value = true;
+      
+      // Create video item and add to history
+      final videoItem = VideoItem(
+        id: video.id.toString(),
+        title: video.title,
+        author: video.author,
+        duration: video.duration,
+      );
+      currentVideo.value = videoItem;
+      _addToHistory(videoItem);
+      
     } catch (e) {
       print('Error: $e');
       currentError.value = 'Error: ${e.toString()}';
@@ -54,6 +99,15 @@ class AudioController extends GetxController {
     } finally {
       isLoading.value = false;
       yt?.close();
+    }
+  }
+
+  void _addToHistory(VideoItem video) {
+    try {
+      final historyController = Get.find<HistoryController>();
+      historyController.addToHistory(video);
+    } catch (e) {
+      print('History controller not found: $e');
     }
   }
 
@@ -103,3 +157,4 @@ class AudioController extends GetxController {
     super.onClose();
   }
 }
+
