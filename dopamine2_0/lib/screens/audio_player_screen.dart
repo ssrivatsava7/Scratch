@@ -26,15 +26,13 @@ class AudioPlayerScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
-            onPressed: () {
-              Get.to(() => SettingsScreen());
-            },
+            onPressed: () => Get.to(() => SettingsScreen()),
           ),
         ],
       ),
       body: Column(
         children: [
-          // Search bar
+          // 🔍 Search Bar
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
@@ -61,7 +59,7 @@ class AudioPlayerScreen extends StatelessWidget {
             ),
           ),
 
-          // Error display
+          // ❗ Error Display
           Obx(() {
             if (audioController.currentError.value.isNotEmpty) {
               return Container(
@@ -93,7 +91,7 @@ class AudioPlayerScreen extends StatelessWidget {
             return const SizedBox.shrink();
           }),
 
-          // Loading indicator
+          // ⏳ Loading Indicator
           Obx(() {
             if (audioController.isLoading.value) {
               return const Padding(
@@ -104,47 +102,41 @@ class AudioPlayerScreen extends StatelessWidget {
             return const SizedBox.shrink();
           }),
 
-          // Playback controls
+          // ▶ Playback Controls
           Obx(() {
-            if (audioController.isPlaying.value) {
-              return Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.pause, size: 32),
-                    onPressed: () => audioController.togglePlayback(),
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: Icon(
+                    audioController.isPlaying.value ? Icons.pause : Icons.play_arrow,
+                    size: 48,
                   ),
-                  const SizedBox(width: 16),
-                  IconButton(
-                    icon: const Icon(Icons.stop, size: 32),
-                    onPressed: () => audioController.stopPlayback(),
-                  ),
-                ],
-              );
-            } else {
-              return IconButton(
-                icon: const Icon(Icons.play_arrow, size: 48),
-                onPressed: () => audioController.togglePlayback(),
-              );
-            }
+                  onPressed: () => audioController.togglePlayback(),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.stop, size: 32),
+                  onPressed: () => audioController.stopPlayback(),
+                ),
+              ],
+            );
           }),
 
-          // Display search results
+          // 🎵 Display Search Results
           Expanded(
             child: Obx(() {
-              if (audioController.searchResults.isEmpty) {
+              final results = audioController.searchResults;
+
+              if (results.isEmpty) {
                 return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.music_note, size: 64, color: Colors.grey),
-                      const SizedBox(height: 16),
+                    children: const [
+                      Icon(Icons.music_note, size: 64, color: Colors.grey),
+                      SizedBox(height: 16),
                       Text(
                         "Search for songs to get started!",
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.grey.shade600,
-                        ),
+                        style: TextStyle(fontSize: 18, color: Colors.grey),
                       ),
                     ],
                   ),
@@ -152,10 +144,9 @@ class AudioPlayerScreen extends StatelessWidget {
               }
 
               return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                itemCount: audioController.searchResults.length,
+                itemCount: results.length,
                 itemBuilder: (context, index) {
-                  var video = audioController.searchResults[index];
+                  final video = results[index];
                   return _buildVideoCard(context, video);
                 },
               );
@@ -166,6 +157,7 @@ class AudioPlayerScreen extends StatelessWidget {
     );
   }
 
+  // 🎶 Video Card Builder
   Widget _buildVideoCard(BuildContext context, video) {
     final videoItem = VideoItem(
       id: video.id.toString(),
@@ -181,11 +173,7 @@ class AudioPlayerScreen extends StatelessWidget {
           backgroundColor: Colors.blue,
           child: Icon(Icons.music_note, color: Colors.white),
         ),
-        title: Text(
-          video.title,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
+        title: Text(video.title, maxLines: 2, overflow: TextOverflow.ellipsis),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -199,71 +187,20 @@ class AudioPlayerScreen extends StatelessWidget {
         ),
         trailing: PopupMenuButton(
           itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'play',
-              child: Row(
-                children: [
-                  Icon(Icons.play_arrow),
-                  SizedBox(width: 8),
-                  Text('Play Audio'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'video',
-              child: Row(
-                children: [
-                  Icon(Icons.video_library),
-                  SizedBox(width: 8),
-                  Text('Play Video'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'favorite',
-              child: Row(
-                children: [
-                  Icon(Icons.favorite),
-                  SizedBox(width: 8),
-                  Text('Add to Favorites'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'playlist',
-              child: Row(
-                children: [
-                  Icon(Icons.playlist_add),
-                  SizedBox(width: 8),
-                  Text('Add to Playlist'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'download',
-              child: Row(
-                children: [
-                  Icon(Icons.download),
-                  SizedBox(width: 8),
-                  Text('Download'),
-                ],
-              ),
-            ),
+            PopupMenuItem(value: 'play', child: _menuItem(Icons.play_arrow, "Play Audio")),
+            PopupMenuItem(value: 'video', child: _menuItem(Icons.video_library, "Play Video")),
+            PopupMenuItem(value: 'favorite', child: _menuItem(Icons.favorite, "Add to Favorites")),
+            PopupMenuItem(value: 'playlist', child: _menuItem(Icons.playlist_add, "Add to Playlist")),
+            PopupMenuItem(value: 'download', child: _menuItem(Icons.download, "Download")),
+
           ],
           onSelected: (value) {
             switch (value) {
               case 'play':
-                audioController.loadAudio(
-                  video.id.toString(),
-                  title: video.title,
-                  author: video.author,
-                );
+                audioController.loadAudio(video.id.toString(), title: video.title, author: video.author);
                 break;
               case 'video':
-                Get.to(() => VideoPlayerScreen(
-                      videoId: video.id.toString(),
-                      videoTitle: video.title,
-                    ));
+                Get.to(() => VideoPlayerScreen(videoId: video.id.toString(), videoTitle: video.title));
                 break;
               case 'favorite':
                 favoritesController.addFavorite(videoItem);
@@ -277,24 +214,25 @@ class AudioPlayerScreen extends StatelessWidget {
             }
           },
         ),
-        onTap: () {
-          audioController.loadAudio(
-            video.id.toString(),
-            title: video.title,
-            author: video.author,
-          );
-        },
+        onTap: () => audioController.loadAudio(video.id.toString(), title: video.title, author: video.author),
       ),
     );
   }
 
+  static Widget _menuItem(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon),
+        const SizedBox(width: 8),
+        Text(text),
+      ],
+    );
+  }
+
+  // ➕ Playlist Dialog
   void _showAddToPlaylistDialog(BuildContext context, VideoItem video) {
     if (playlistController.playlists.isEmpty) {
-      Get.snackbar(
-        'No Playlists',
-        'Create a playlist first',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      Get.snackbar('No Playlists', 'Create a playlist first', snackPosition: SnackPosition.BOTTOM);
       return;
     }
 
@@ -320,75 +258,51 @@ class AudioPlayerScreen extends StatelessWidget {
             },
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Cancel'),
-          ),
-        ],
+        actions: [TextButton(onPressed: () => Get.back(), child: const Text('Cancel'))],
       ),
     );
   }
 
+  // ⬇ Download Dialog
   void _showDownloadDialog(BuildContext context, VideoItem video) {
     String selectedQuality = '720p';
     bool isAudioOnly = false;
 
     Get.dialog(
-      StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: const Text('Download'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<String>(
-                  value: selectedQuality,
-                  decoration: const InputDecoration(
-                    labelText: 'Quality',
-                  ),
-                  items: ['360p', '480p', '720p', '1080p']
-                      .map((q) => DropdownMenuItem(
-                            value: q,
-                            child: Text(q),
-                          ))
-                      .toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() => selectedQuality = value);
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-                CheckboxListTile(
-                  value: isAudioOnly,
-                  title: const Text('Audio Only'),
-                  onChanged: (value) {
-                    setState(() => isAudioOnly = value ?? false);
-                  },
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Get.back(),
-                child: const Text('Cancel'),
+      StatefulBuilder(builder: (context, setState) {
+        return AlertDialog(
+          title: const Text('Download'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                value: selectedQuality,
+                decoration: const InputDecoration(labelText: 'Quality'),
+                items: ['360p', '480p', '720p', '1080p']
+                    .map((q) => DropdownMenuItem(value: q, child: Text(q)))
+                    .toList(),
+                onChanged: (value) => setState(() => selectedQuality = value ?? '720p'),
               ),
-              TextButton(
-                onPressed: () {
-                  downloadController.startDownload(
-                    video,
-                    quality: selectedQuality,
-                    isAudioOnly: isAudioOnly,
-                  );
-                  Get.back();
-                },
-                child: const Text('Download'),
+              const SizedBox(height: 16),
+              CheckboxListTile(
+                value: isAudioOnly,
+                title: const Text('Audio Only'),
+                onChanged: (value) => setState(() => isAudioOnly = value ?? false),
               ),
             ],
-          );
-        },
-      ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () {
+                downloadController.startDownload(video, quality: selectedQuality, isAudioOnly: isAudioOnly);
+                Get.back();
+              },
+              child: const Text('Download'),
+            ),
+          ],
+        );
+      }),
     );
   }
 }

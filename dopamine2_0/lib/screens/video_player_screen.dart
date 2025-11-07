@@ -39,10 +39,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         var manifest = await youtube.videos.streamsClient.getManifest(widget.videoId);
         var muxedStream = manifest.muxed.withHighestBitrate();
 
-        if (muxedStream == null) {
-          throw Exception('No playable stream found. Video may be restricted.');
-        }
-
         await _player.open(Media(muxedStream.url.toString()));
         _player.play();
 

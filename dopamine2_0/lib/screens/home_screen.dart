@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'audio_player_screen.dart';
 import 'favorites_screen.dart';
 import 'history_screen.dart';
 import 'playlists_screen.dart';
 import 'downloads_screen.dart';
-import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

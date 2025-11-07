@@ -1,10 +1,13 @@
-import 'package:get/get.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_libs_audio/media_kit_libs_audio.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:get/get.dart';
 import '../models/video_item.dart';
 import '../services/storage_service.dart';
 import 'history_controller.dart';
+
+
 
 class AudioController extends GetxController {
   late final Player _player;
@@ -19,6 +22,8 @@ class AudioController extends GetxController {
   @override
   void onInit() {
     _player = Player();
+    _player.setVolume(100);
+print("AudioController: Player initialized with volume 100%");
     _storage.init();
     _loadBackgroundPlaybackPreference();
     super.onInit();
@@ -86,16 +91,12 @@ class AudioController extends GetxController {
       yt = YoutubeExplode();
 
       var video = await yt.videos.get(videoId);
-      if (video == null || video.duration == null || video.duration == Duration.zero) {
+      if (video.duration == null || video.duration == Duration.zero) {
         throw Exception('Video not playable');
       }
 
       var manifest = await yt.videos.streamsClient.getManifest(video.id);
       var audioStreamInfo = manifest.audioOnly.withHighestBitrate();
-
-      if (audioStreamInfo == null) {
-        throw Exception('No audio stream found. Video might be age-restricted or unavailable.');
-      }
 
       final audioUrl = audioStreamInfo.url.toString();
       
