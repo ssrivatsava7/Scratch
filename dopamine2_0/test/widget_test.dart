@@ -11,20 +11,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dopamine2_0/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+  testWidgets('Dopamine app smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const DopamineApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Verify that the app title is displayed
+    expect(find.text('Dopamine 2.0 - YouTube Audio Player'), findsOneWidget);
+    
+    // Verify search field exists
+    expect(find.byType(TextField), findsOneWidget);
+    
+    // Verify initial empty state message
+    expect(find.text('Search for songs to get started!'), findsOneWidget);
   });
 }

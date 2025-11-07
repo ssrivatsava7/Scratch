@@ -1,0 +1,164 @@
+# Launching lib\main.dart on Windows in debug mode...
+# Building Windows application...                                    63.7s
+# √ Built build\windows\x64\runner\Debug\dopamine2_0.exe
+# package:media_kit_libs_windows_video registered.
+# Syncing files to device Windows...                                 199ms
+# 
+# Flutter run key commands.
+# r Hot reload.
+# R Hot restart.
+# h List all available interactive commands.
+# d Detach (terminate "flutter run" but leave application running).
+# c Clear the screen
+# q Quit (terminate the application on the device).
+# 
+# A Dart VM Service on Windows is available at: http://127.0.0.1:8233/XfTPvQLbo_E=/
+# The Flutter DevTools debugger and profiler on Windows is available at:
+# http://127.0.0.1:9101?uri=http://127.0.0.1:8233/XfTPvQLbo_E=/
+# media_kit: NativeReferenceHolder: Allocated 2641361692480
+# media_kit: ANGLESurfaceManager: Direct3D Feature Level: 11_0
+# 1 1
+# media_kit: VideoOutput: Create Texture: 2639489426816
+# Cannot load nvcuda.dll
+# media_kit: VideoOutput: Using H/W rendering.
+# [ERROR:flutter/shell/common/shell.cc(1064)] The 'com.alexmercerind/media_kit_video' channel sent a message from native to Flutter on a non-platform thread.
+# Platform channel messages must be sent on the platform thread. Failure to do so may result in data loss or crashes, and must be fixed in the plugin or application code creating that channel.
+# See https://docs.flutter.dev/platform-integration/platform-channels#channels-and-platform-threading for more information.
+# VideoOutput.Resize
+# {handle: 2639524125680, id: 2639489426816, rect: {height: 0, left: 0, top: 0, width: 0}}       
+# NativeVideoController: Texture ID: 2639489426816
+# 640 360
+# media_kit: VideoOutput: Free Texture: 2639489426816
+# media_kit: ANGLESurfaceManager: Direct3D Feature Level: 11_0
+# media_kit: VideoOutput: Create Texture: 2639787546688
+# VideoOutput.Resize
+# {handle: 2639524125680, id: 2639787546688, rect: {height: 360, left: 0, top: 0, width: 640}}   
+# media_kit: VideoOutput: Free Texture: 2639787546688
+# VideoOutput::~VideoOutput: 2639524125680
+# media_kit: ANGLESurfaceManager: Direct3D Feature Level: 11_0
+# 1 1
+# media_kit: VideoOutput: Create Texture: 2639489427200
+# Cannot load nvcuda.dll
+# media_kit: VideoOutput: Using H/W rendering.
+# VideoOutput.Resize
+# {handle: 2639959414736, id: 2639489427200, rect: {height: 0, left: 0, top: 0, width: 0}}       
+# NativeVideoController: Texture ID: 2639489427200
+# 640 360
+# media_kit: ANGLESurfaceManager: Direct3D Feature Level: 11_0
+# media_kit: VideoOutput: Free Texture: 2639489427200
+# media_kit: VideoOutput: Create Texture: 2639792253728
+# VideoOutput.Resize
+# {handle: 2639959414736, id: 2639792253728, rect: {height: 360, left: 0, top: 0, width: 640}}   
+# media_kit: VideoOutput: Free Texture: 2639792253728
+# VideoOutput::~VideoOutput: 2639959414736
+# Error: YoutubeExplodeException: Video _mR6bY-ndso returned 403 (stream: 18)
+# media_kit: ANGLESurfaceManager: Direct3D Feature Level: 11_0
+# 1 1
+# media_kit: VideoOutput: Create Texture: 2639792253536
+# Cannot load nvcuda.dll
+# media_kit: VideoOutput: Using H/W rendering.
+# VideoOutput.Resize
+# {handle: 2640080793776, id: 2639792253536, rect: {height: 0, left: 0, top: 0, width: 0}}       
+# NativeVideoController: Texture ID: 2639792253536
+# media_kit: VideoOutput: Free Texture: 2639792253536
+# VideoOutput::~VideoOutput: 2640080793776
+# media_kit: ANGLESurfaceManager: Direct3D Feature Level: 11_0
+# 1 1
+# media_kit: VideoOutput: Create Texture: 2639489163584
+# Cannot load nvcuda.dll
+# media_kit: VideoOutput: Using H/W rendering.
+# VideoOutput.Resize
+# {handle: 2640080801840, id: 2639489163584, rect: {height: 0, left: 0, top: 0, width: 0}}       
+# NativeVideoController: Texture ID: 2639489163584
+# Error: Assertion failed: "[Player] has been disposed"
+# 540 360
+# media_kit: VideoOutput: Free Texture: 2639489163584
+# media_kit: ANGLESurfaceManager: Direct3D Feature Level: 11_0
+# media_kit: VideoOutput: Create Texture: 2639486943536
+# VideoOutput.Resize
+# {handle: 2640080801840, id: 2639486943536, rect: {height: 360, left: 0, top: 0, width: 540}}   
+# media_kit: VideoOutput: Free Texture: 2639486943536
+# VideoOutput::~VideoOutput: 2640080801840
+# Error: YoutubeExplodeException: Video TS84-uinbdc returned 403 (stream: 137)
+# Error: YoutubeExplodeException: Video bky_Rvu_AXA returned 403 (stream: 137)
+# media_kit: ANGLESurfaceManager: Direct3D Feature Level: 11_0
+# 1 1
+# media_kit: VideoOutput: Create Texture: 2639524886608
+# Cannot load nvcuda.dll
+# media_kit: VideoOutput: Using H/W rendering.
+# VideoOutput.Resize
+# {handle: 2640036990080, id: 2639524886608, rect: {height: 0, left: 0, top: 0, width: 0}}       
+# NativeVideoController: Texture ID: 2639524886608
+# Error: YoutubeExplodeException: Video SmaY7RfBgas returned 403 (stream: 313)
+# media_kit: VideoOutput: Free Texture: 2639524886608
+# VideoOutput::~VideoOutput: 2640036990080
+# Error: YoutubeExplodeException: Video 9gdJBur-2bs returned 403 (stream: 18)
+# Error: YoutubeExplodeException: Video UcL6EVixLjY returned 403 (stream: 18)
+# Error: YoutubeExplodeException: Video eGLSPyGszjo returned 403 (stream: 137)
+# Error: YoutubeExplodeException: Video ou6GFVgoxfI returned 403 (stream: 137)
+# media_kit: ANGLESurfaceManager: Direct3D Feature Level: 11_0
+# 1 1
+# media_kit: VideoOutput: Create Texture: 2639525700224
+# Cmedia_kit: VideoOutput: Using H/W rendering.
+# annot load nvcuda.dll
+# VideoOutput.Resize
+# {handle: 2639948472848, id: 2639525700224, rect: {height: 0, left: 0, top: 0, width: 0}}       
+# NativeVideoController: Texture ID: 2639525700224
+# 640 360
+# media_kit: VideoOutput: Free Texture: 2639525700224
+# media_kit: ANGLESurfaceManager: Direct3D Feature Level: 11_0
+# media_kit: VideoOutput: Create Texture: 2639787547552
+# VideoOutput.Resize
+# {handle: 2639948472848, id: 2639787547552, rect: {height: 360, left: 0, top: 0, width: 640}}   
+# media_kit: VideoOutput: Free Texture: 2639787547552
+# VideoOutput::~VideoOutput: 2639948472848
+# media_kit: ANGLESurfaceManager: Direct3D Feature Level: 11_0
+# 1 1
+# media_kit: VideoOutput: Create Texture: 2639489405424
+# Cannot load nvcuda.dll
+# media_kit: VideoOutput: Using H/W rendering.
+# VideoOutput.Resize
+# {handle: 2639948294544, id: 2639489405424, rect: {height: 0, left: 0, top: 0, width: 0}}       
+# NativeVideoController: Texture ID: 2639489405424
+# 640 360
+# media_kit: VideoOutput: Free Texture: 2639489405424
+# media_kit: ANGLESurfaceManager: Direct3D Feature Level: 11_0
+# media_kit: VideoOutput: Create Texture: 2640035891904
+# VideoOutput.Resize
+# {handle: 2639948294544, id: 2640035891904, rect: {height: 360, left: 0, top: 0, width: 640}}   
+# media_kit: VideoOutput: Free Texture: 2640035891904
+# VideoOutput::~VideoOutput: 2639948294544
+# Error: YoutubeExplodeException: Video 1v_qKcDa_v4 returned 403 (stream: 271)
+# media_kit: ANGLESurfaceManager: Direct3D Feature Level: 11_0
+# 1 1
+# media_kit: VideoOutput: Create Texture: 2639949374048
+# Cannot load nvcuda.dll
+# media_kit: VideoOutput: Using H/W rendering.
+# VideoOutput.Resize
+# {handle: 2640029471584, id: 2639949374048, rect: {height: 0, left: 0, top: 0, width: 0}}       
+# NativeVideoController: Texture ID: 2639949374048
+# 640 360
+# media_kit: VideoOutput: Free Texture: 2639949374048
+# media_kit: ANGLESurfaceManager: Direct3D Feature Level: 11_0
+# media_kit: VideoOutput: Create Texture: 2640068791904
+# VideoOutput.Resize
+# {handle: 2640029471584, id: 2640068791904, rect: {height: 360, left: 0, top: 0, width: 640}}   
+# media_kit: VideoOutput: Free Texture: 2640068791904
+# VideoOutput::~VideoOutput: 2640029471584
+# media_kit: ANGLESurfaceManager: Direct3D Feature Level: 11_0
+# 1 1
+# media_kit: VideoOutput: Create Texture: 2639524140336
+# Cannot load nvcuda.dll
+# media_kit: VideoOutput: Using H/W rendering.
+# VideoOutput.Resize
+# {handle: 2639959442064, id: 2639524140336, rect: {height: 0, left: 0, top: 0, width: 0}}       
+# NativeVideoController: Texture ID: 2639524140336
+# 640 360
+# media_kit: VideoOutput: Free Texture: 2639524140336
+# media_kit: ANGLESurfaceManager: Direct3D Feature Level: 11_0
+# media_kit: VideoOutput: Create Texture: 2639792240576
+# VideoOutput.Resize
+# {handle: 2639959442064, id: 2639792240576, rect: {height: 360, left: 0, top: 0, width: 640}}   
+# media_kit: VideoOutput: Free Texture: 2639792240576
+# VideoOutput::~VideoOutput: 2639959442064
+# Lost connection to device.
