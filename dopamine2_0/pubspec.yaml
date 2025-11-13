@@ -12,6 +12,7 @@ dependencies:
 
   # State management
   get: ^4.6.6
+  get_storage: ^2.1.1
 
   # Media playback (latest stable & Windows compatible)
   media_kit: ^1.1.10
@@ -23,10 +24,12 @@ dependencies:
 
   # YouTube integration
   youtube_explode_dart: ^2.5.3
+  path_provider: ^2.1.3
 
   # Networking
   http: ^1.1.0
   dio: ^5.4.0
+  uuid: ^3.0.7
 
   # Platform-specific
   webview_windows: ^0.4.0
@@ -35,7 +38,7 @@ dependencies:
 
   # Storage & persistence
   shared_preferences: ^2.2.2
-  path_provider: ^2.1.1
+
 
   # Background playback (optional)
   # audio_service: ^0.18.12
