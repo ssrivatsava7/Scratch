@@ -1,33 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:get_storage/get_storage.dart';
 
+import 'controllers/favorites_controller.dart';
+import 'controllers/playlist_controller.dart';
 import 'controllers/download_controller.dart';
 import 'controllers/mini_player_controller.dart';
-import 'controllers/audio_controller.dart';
-import 'controllers/youtube_media_controller.dart';
-import 'controllers/favorites_controller.dart';
+import 'controllers/media_switch_controller.dart';
 import 'controllers/history_controller.dart';
-import 'controllers/playlist_controller.dart';
-
+import 'controllers/search_controller.dart' as search;
+import 'controllers/nav_controller.dart';
 import 'theme/midnight_aurora_theme.dart';
 import 'routes/app_pages.dart';
 import 'widgets/aurora_mini_player.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  // ⭐ REGISTER ALL CONTROLLERS HERE
-  Get.put(AudioController());             // Audio Player
-  Get.put(YouTubeMediaController());      // YouTube Search / Results
-  Get.put(FavoritesController());         // Favorites
-  Get.put(HistoryController());           // History
-  Get.put(PlaylistController());          // Playlists
+    /// Initialize MediaKit
+    MediaKit.ensureInitialized();
+    
+    /// Initialize GetStorage
+    await GetStorage.init();
 
-  // Existing controllers
-  Get.put(MiniPlayerController());        // Mini Player Overlay
-  Get.put(DownloadController());          // Downloads
+    /// Initialize all controllers
+    Get.put(FavoritesController());
+    Get.put(PlaylistController());
+    Get.put(DownloadController());
+    Get.put(MiniPlayerController());
+    Get.put(MediaSwitchController());
+    Get.put(HistoryController());
+    Get.put(search.SearchController());
+    Get.put(NavController());
 
-  runApp(const DopamineApp());
+    runApp(const DopamineApp());
+  } catch (e) {
+    print('Error initializing app: $e');
+    runApp(MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Text('Error: $e'),
+        ),
+      ),
+    ));
+  }
 }
 
 class DopamineApp extends StatelessWidget {
@@ -36,18 +54,16 @@ class DopamineApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: "Dopamine Player",
       debugShowCheckedModeBanner: false,
+      title: 'Dopamine Player',
       theme: MidnightAuroraTheme.theme,
       getPages: AppPages.routes,
       initialRoute: AppPages.initial,
-
-      // Global overlay: mini player stays on all screens
       builder: (context, child) {
         return Stack(
           children: [
-            child!,
-            AuroraMiniPlayer(),
+            child ?? const SizedBox(),
+            const AuroraMiniPlayer(),
           ],
         );
       },

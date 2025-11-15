@@ -84,4 +84,20 @@ class MidnightAuroraTheme {
       ),
     ],
   );
+
+  // ----------------------------------------
+  // Bottom Sheet Decoration
+  // ----------------------------------------
+  static final bottomSheetDecoration = BoxDecoration(
+    gradient: LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        Colors.black.withOpacity(0.9),
+        Colors.purple.withOpacity(0.3),
+        Colors.black.withOpacity(0.9),
+      ],
+    ),
+    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+  );
 }

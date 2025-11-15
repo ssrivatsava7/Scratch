@@ -1,25 +1,50 @@
 import 'package:get/get.dart';
+
+import '../screens/home/home_screen.dart';
+import '../screens/audio/audio_player_screen.dart';
+import '../screens/video/video_player_screen.dart';
+import '../screens/search/search_screen.dart';
+import '../screens/search/search_results_screen.dart';
+import '../screens/playlists/playlists_screen.dart';
+import '../screens/playlists/playlist_detail_screen.dart';
+import '../screens/favorites/favorites_screen.dart';
+import '../screens/history/history_screen.dart';
+import '../screens/downloads/downloads_screen.dart';
+import '../screens/settings/settings_screen.dart';
+
 import 'app_routes.dart';
 
-import '../screens/home_screen.dart';
-import '../screens/favorites_screen.dart';
-import '../screens/history_screen.dart';
-import '../screens/downloads_screen.dart';
-import '../screens/settings_screen.dart';
-import '../screens/video_player_screen.dart';
-import '../screens/playlist_detail_screen.dart';
-import '../screens/playlists_screen.dart';
-
 class AppPages {
-  AppPages._();
-
-  // 🚀 INITIAL ROUTE (required by GetMaterialApp)
   static const initial = Routes.HOME;
 
   static final routes = [
     GetPage(
       name: Routes.HOME,
-      page: () => HomeScreen(),
+      page: () => const HomeScreen(),
+    ),
+    GetPage(
+      name: Routes.SEARCH,
+      page: () => const SearchScreen(),
+    ),
+    GetPage(
+      name: Routes.SEARCH_RESULTS,
+      page: () => const SearchResultsScreen(),
+    ),
+    GetPage(
+      name: Routes.AUDIO_PLAYER,
+      page: () => const AudioPlayerScreen(),
+    ),
+    GetPage(
+      name: Routes.VIDEO_PLAYER,
+      page: () => const VideoPlayerScreen(),
+    ),
+    GetPage(
+      name: Routes.PLAYLISTS,
+      page: () => PlaylistsScreen(),
+    ),
+    GetPage(
+      name: Routes.PLAYLIST_DETAIL,
+      page: () => const PlaylistDetailScreen(),
     ),
     GetPage(
       name: Routes.FAVORITES,
@@ -35,22 +60,7 @@ class AppPages {
     ),
     GetPage(
       name: Routes.SETTINGS,
-      page: () => const SettingsScreen(),
-    ),
-    GetPage(
-  name: Routes.VIDEO_PLAYER,
-  page: () {
-    final url = Get.arguments['url'] as String;
-    return VideoPlayerScreen(url: url);
-  },
-),
-    GetPage(
-      name: Routes.PLAYLIST_DETAIL,
-      page: () => PlaylistDetailScreen(),
-    ),
-    GetPage(
-      name: Routes.PLAYLISTS,
-      page: () => PlaylistsScreen(),
+      page: () => SettingsScreen(),
     ),
   ];
 }

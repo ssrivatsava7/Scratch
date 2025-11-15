@@ -1,111 +1,91 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../controllers/mini_player_controller.dart';
-import '../theme/midnight_aurora_theme.dart';
+
+import '../controllers/media_switch_controller.dart';
+import '../routes/app_routes.dart';
 
 class AuroraMiniPlayer extends StatelessWidget {
-  AuroraMiniPlayer({super.key});
-
-  final mini = Get.find<MiniPlayerController>();
+  const AuroraMiniPlayer({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final media = Get.find<MediaSwitchController>();
+
     return Obx(() {
-      if (!mini.isVisible.value) return const SizedBox.shrink();
+      // Don't show mini player if no media is loaded
+      if (media.currentTitle.value.isEmpty || media.currentThumbnail.value.isEmpty) {
+        return const SizedBox.shrink();
+      }
 
       return Positioned(
-        left: mini.dx.value,
-        top: mini.dy.value,
+        bottom: 0,
+        left: 0,
+        right: 0,
         child: GestureDetector(
-          onPanUpdate: (details) {
-            mini.updateDrag(
-              mini.dx.value + details.delta.dx,
-              mini.dy.value + details.delta.dy,
-            );
-          },
           onTap: () {
-            // Expand back into full video screen
-            Get.toNamed('/video_player', arguments: {
-              'url': mini.url.value,
-              'title': mini.title.value,
-            });
-
-            mini.isVisible.value = false;
+            if (media.isVideo.value) {
+              Get.toNamed(Routes.VIDEO_PLAYER);
+            } else {
+              Get.toNamed(Routes.AUDIO_PLAYER);
+            }
           },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 240),
-            curve: Curves.easeOutCubic,
-            width: 240,
-            padding: const EdgeInsets.all(12),
-            decoration: MidnightAuroraTheme.glass.copyWith(
-              borderRadius: BorderRadius.circular(22),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.35),
-                  blurRadius: 22,
-                  spreadRadius: 3,
-                )
-              ],
+          child: Container(
+            height: 65,
+            margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.45),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: Colors.purpleAccent.withOpacity(0.25),
+              ),
             ),
             child: Row(
               children: [
-                // Thumbnail with neon border
+                // Thumbnail
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(10),
                   child: Image.network(
-                    mini.thumbnail.value,
-                    width: 80,
-                    height: 60,
+                    media.currentThumbnail.value,
+                    height: 45,
+                    width: 45,
                     fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 45,
+                        width: 45,
+                        color: Colors.grey[800],
+                        child: const Icon(Icons.music_note, color: Colors.white54),
+                      );
+                    },
                   ),
                 ),
 
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
 
-                // Title + playback buttons
+                // Title
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        mini.title.value,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-
-                      const SizedBox(height: 6),
-
-                      Row(
-                        children: [
-                          GestureDetector(
-                            onTap: mini.togglePlayback,
-                            child: Obx(() {
-                              return Icon(
-                                mini.isPlaying.value
-                                    ? Icons.pause_circle_filled
-                                    : Icons.play_circle_fill,
-                                color: const Color(0xFF4FD1C5),
-                                size: 26,
-                              );
-                            }),
-                          ),
-                          const SizedBox(width: 10),
-                          GestureDetector(
-                            onTap: mini.hideMiniPlayer,
-                            child: const Icon(Icons.close_rounded,
-                                color: Colors.white70, size: 22),
-                          )
-                        ],
-                      )
-                    ],
+                  child: Text(
+                    media.currentTitle.value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
                   ),
-                )
+                ),
+
+                const SizedBox(width: 12),
+
+                // Play / Pause Button
+                IconButton(
+                  icon: Icon(
+                    media.isPlaying.value ? Icons.pause : Icons.play_arrow,
+                    color: Colors.white,
+                  ),
+                  onPressed: () => media.isPlaying.value ? media.pause() : media.play(),
+                ),
               ],
             ),
           ),
