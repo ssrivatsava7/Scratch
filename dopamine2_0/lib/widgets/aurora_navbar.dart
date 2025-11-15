@@ -1,76 +1,64 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../routes/app_routes.dart';
 
 class AuroraNavbar extends StatelessWidget {
   final int currentIndex;
+  final Function(int) onTap;
 
   const AuroraNavbar({
     super.key,
     required this.currentIndex,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 68,
+      height: 70,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0x660A0E1A),
-            Color(0x990A0E1A),
-          ],
-        ),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+        color: Colors.black.withOpacity(0.9),
         border: Border(
-          top: BorderSide(color: Colors.white.withOpacity(0.08)),
+          top: BorderSide(
+            color: Colors.purpleAccent.withOpacity(0.3),
+            width: 1,
+          ),
         ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _item(icon: Icons.home_rounded, label: "Home", route: Routes.HOME, index: 0),
-          _item(icon: Icons.favorite_rounded, label: "Favs", route: Routes.FAVORITES, index: 1),
-          _item(icon: Icons.history_rounded, label: "History", route: Routes.HISTORY, index: 2),
-          _item(icon: Icons.download_rounded, label: "Downloads", route: Routes.DOWNLOADS, index: 3),
-          _item(icon: Icons.settings_rounded, label: "Settings", route: Routes.SETTINGS, index: 4),
+          _buildNavItem(Icons.home, 0, 'Home'),
+          _buildNavItem(Icons.playlist_play, 1, 'Playlists'),
+          _buildNavItem(Icons.favorite, 2, 'Favorites'),
+          _buildNavItem(Icons.download, 3, 'Downloads'),
+          _buildNavItem(Icons.settings, 4, 'Settings'),
         ],
       ),
     );
   }
 
-  Widget _item({
-    required IconData icon,
-    required String label,
-    required String route,
-    required int index,
-  }) {
-    final selected = index == currentIndex;
+  Widget _buildNavItem(IconData icon, int index, String label) {
+    final isSelected = currentIndex == index;
 
     return GestureDetector(
-      onTap: () => Get.offNamed(route),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        decoration: selected
-            ? BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(14),
-              )
-            : null,
+      onTap: () => onTap(index),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon,
-                size: selected ? 28 : 24,
-                color: selected ? const Color(0xFF4FD1C5) : Colors.white70),
+            Icon(
+              icon,
+              color: isSelected ? Colors.purpleAccent : Colors.white54,
+              size: 28,
+            ),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
-                fontSize: 11,
-                color: selected ? Colors.white : Colors.white70,
-                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? Colors.purpleAccent : Colors.white54,
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
           ],

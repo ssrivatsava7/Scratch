@@ -1,39 +1,58 @@
-import 'dart:convert';
 import 'package:get_storage/get_storage.dart';
 
 class StorageService {
-  static final box = GetStorage();
+  static final _box = GetStorage();
 
-  // -------- FAVORITES --------
-  static List<Map<String, dynamic>> getFavorites() {
-    final raw = box.read("favorites");
-    if (raw == null) return [];
-    return List<Map<String, dynamic>>.from(raw);
+  // Favorites
+  static List<dynamic> getFavorites() {
+    final data = _box.read('favorites');
+    if (data == null) return [];
+    if (data is List) return data;
+    return [];
   }
 
-  static void saveFavorites(List<Map<String, dynamic>> favorites) {
-    box.write("favorites", favorites);
+  static void saveFavorites(List<dynamic> favorites) {
+    _box.write('favorites', favorites);
   }
 
-  // -------- HISTORY --------
-  static List<Map<String, dynamic>> getHistory() {
-    final raw = box.read("history");
-    if (raw == null) return [];
-    return List<Map<String, dynamic>>.from(raw);
+  // History
+  static List<dynamic> getHistory() {
+    final data = _box.read('history');
+    if (data == null) return [];
+    if (data is List) return data;
+    return [];
   }
 
-  static void saveHistory(List<Map<String, dynamic>> history) {
-    box.write("history", history);
+  static void saveHistory(List<dynamic> history) {
+    _box.write('history', history);
   }
 
-  // -------- PLAYLISTS --------
-  static List<Map<String, dynamic>> getPlaylists() {
-    final raw = box.read("playlists");
-    if (raw == null) return [];
-    return List<Map<String, dynamic>>.from(raw);
+  // Playlists
+  static List<dynamic> getPlaylists() {
+    final data = _box.read('playlists');
+    if (data == null) return [];
+    if (data is List) return data;
+    return [];
   }
 
-  static void savePlaylists(List<Map<String, dynamic>> playlists) {
-    box.write("playlists", playlists);
+  static void savePlaylists(List<dynamic> playlists) {
+    _box.write('playlists', playlists);
+  }
+
+  // Downloads
+  static List<dynamic> getDownloads() {
+    final data = _box.read('downloads');
+    if (data == null) return [];
+    if (data is List) return data;
+    return [];
+  }
+
+  static void saveDownloads(List<dynamic> downloads) {
+    _box.write('downloads', downloads);
+  }
+
+  // Clear all data
+  static void clearAll() {
+    _box.erase();
   }
 }
