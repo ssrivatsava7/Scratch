@@ -72,117 +72,151 @@ class VideoPlayerScreen extends StatelessWidget {
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                   colors: [
-                    Colors.black.withOpacity(0.8),
+                    Colors.black.withOpacity(0.9),
                     Colors.transparent,
                   ],
                 ),
               ),
-              padding: const EdgeInsets.all(16),
-              child: Obx(() {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Title
-                    Text(
-                      media.currentTitle.value,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              child: SafeArea(
+                child: Obx(() {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Progress Bar
+                      SliderTheme(
+                        data: SliderThemeData(
+                          trackHeight: 3,
+                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                          overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                          activeTrackColor: Colors.purpleAccent,
+                          inactiveTrackColor: Colors.white24,
+                          thumbColor: Colors.purpleAccent,
+                        ),
+                        child: Slider(
+                          value: media.position.value.inSeconds.toDouble(),
+                          max: media.duration.value.inSeconds > 0
+                              ? media.duration.value.inSeconds.toDouble()
+                              : 1.0,
+                          onChanged: (value) {
+                            media.seek(Duration(seconds: value.toInt()));
+                          },
+                        ),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 16),
 
-                    // Progress Bar
-                    SliderTheme(
-                      data: SliderThemeData(
-                        trackHeight: 3,
-                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-                        activeTrackColor: Colors.purpleAccent,
-                        inactiveTrackColor: Colors.white24,
-                        thumbColor: Colors.purpleAccent,
+                      // Time Display and Title in a compact row
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              _formatDuration(media.position.value),
+                              style: const TextStyle(color: Colors.white70, fontSize: 12),
+                            ),
+                            Expanded(
+                              child: Text(
+                                media.currentTitle.value,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            Text(
+                              _formatDuration(media.duration.value),
+                              style: const TextStyle(color: Colors.white70, fontSize: 12),
+                            ),
+                          ],
+                        ),
                       ),
-                      child: Slider(
-                        value: media.position.value.inSeconds.toDouble(),
-                        max: media.duration.value.inSeconds > 0
-                            ? media.duration.value.inSeconds.toDouble()
-                            : 1.0,
-                        onChanged: (value) {
-                          media.seek(Duration(seconds: value.toInt()));
-                        },
-                      ),
-                    ),
 
-                    // Time Display
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      const SizedBox(height: 12),
+
+                      // Playback Controls with better spacing and larger touch targets
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          Text(
-                            _formatDuration(media.position.value),
-                            style: const TextStyle(color: Colors.white70, fontSize: 12),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(30),
+                              onTap: () {
+                                final newPos = media.position.value - const Duration(seconds: 10);
+                                media.seek(newPos < Duration.zero ? Duration.zero : newPos);
+                              },
+                              child: Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white.withOpacity(0.1),
+                                ),
+                                child: const Icon(
+                                  Icons.replay_10,
+                                  color: Colors.white,
+                                  size: 28,
+                                ),
+                              ),
+                            ),
                           ),
-                          Text(
-                            _formatDuration(media.duration.value),
-                            style: const TextStyle(color: Colors.white70, fontSize: 12),
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                colors: [Colors.purpleAccent, Colors.deepPurple],
+                              ),
+                            ),
+                            child: IconButton(
+                              icon: Icon(
+                                media.isPlaying.value ? Icons.pause : Icons.play_arrow,
+                                color: Colors.white,
+                                size: 32,
+                              ),
+                              onPressed: () {
+                                if (media.isPlaying.value) {
+                                  media.pause();
+                                } else {
+                                  media.play();
+                                }
+                              },
+                            ),
+                          ),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(30),
+                              onTap: () {
+                                final newPos = media.position.value + const Duration(seconds: 10);
+                                media.seek(newPos > media.duration.value ? media.duration.value : newPos);
+                              },
+                              child: Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white.withOpacity(0.1),
+                                ),
+                                child: const Icon(
+                                  Icons.forward_10,
+                                  color: Colors.white,
+                                  size: 28,
+                                ),
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Playback Controls
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.replay_10, color: Colors.white, size: 32),
-                          onPressed: () {
-                            final newPos = media.position.value - const Duration(seconds: 10);
-                            media.seek(newPos < Duration.zero ? Duration.zero : newPos);
-                          },
-                        ),
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [Colors.purpleAccent, Colors.deepPurple],
-                            ),
-                          ),
-                          child: IconButton(
-                            icon: Icon(
-                              media.isPlaying.value ? Icons.pause : Icons.play_arrow,
-                              color: Colors.white,
-                              size: 32,
-                            ),
-                            onPressed: () {
-                              if (media.isPlaying.value) {
-                                media.pause();
-                              } else {
-                                media.play();
-                              }
-                            },
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.forward_10, color: Colors.white, size: 32),
-                          onPressed: () {
-                            final newPos = media.position.value + const Duration(seconds: 10);
-                            media.seek(newPos > media.duration.value ? media.duration.value : newPos);
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                );
-              }),
+                    ],
+                  );
+                }),
+              ),
             ),
           ),
         ],
