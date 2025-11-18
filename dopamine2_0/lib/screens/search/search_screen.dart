@@ -5,7 +5,8 @@ import '../../controllers/search_controller.dart' as local_search;
 import 'search_results_screen.dart';
 
 import '../../widgets/aurora_navbar.dart';
-import '../../controllers/nav_controller.dart';
+import '../../widgets/dopamine_app_bar.dart';
+import '../../utils/controller_helper.dart';
 import '../../theme/midnight_aurora_theme.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -34,20 +35,13 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final nav = Get.find<NavController>();
-
     return Container(
       decoration: MidnightAuroraTheme.backgroundGradient,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          title: const Text('Search'),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Get.back(),
-          ),
+        appBar: DopamineAppBar(
+          title: 'Search',
+          showHomeButton: true,
         ),
         body: Padding(
           padding: const EdgeInsets.all(16),
@@ -150,8 +144,7 @@ class _SearchScreenState extends State<SearchScreen> {
         bottomNavigationBar: AuroraNavbar(
           currentIndex: 1,
           onTap: (index) {
-            final nav = Get.find<NavController>();
-            nav.changePage(index);
+            Controllers.nav.changePage(index);
           },
         ),
       ),

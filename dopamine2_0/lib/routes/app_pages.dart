@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/audio/audio_player_screen.dart';
 import '../screens/video/video_player_screen.dart';
-import '../screens/search/search_screen.dart';
+import '../screens/search/search_screen.dart'; // Ensure this file defines 'SearchScreen'
 import '../screens/search/search_results_screen.dart';
 import '../screens/playlists/playlists_screen.dart';
 import '../screens/playlists/playlist_detail_screen.dart';
@@ -24,7 +24,7 @@ class AppPages {
     ),
     GetPage(
       name: Routes.SEARCH,
-      page: () => const SearchScreen(),
+      page: () => const SearchScreen(), // Make sure 'SearchScreen' is defined in search_screen.dart
     ),
     GetPage(
       name: Routes.SEARCH_RESULTS,

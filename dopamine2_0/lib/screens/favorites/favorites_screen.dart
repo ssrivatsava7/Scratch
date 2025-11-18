@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../controllers/favorites_controller.dart';
-import '../../controllers/media_switch_controller.dart';
-import '../../controllers/history_controller.dart';
+import '../../utils/controller_helper.dart';
+import '../../widgets/dopamine_app_bar.dart';
 import '../../controllers/search_controller.dart' as my_search;
 import '../../routes/app_routes.dart';
 
@@ -12,17 +11,13 @@ class FavoritesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fav = Get.find<FavoritesController>();
+    final fav = Controllers.favorites;
 
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: const Text('Favorites', style: TextStyle(color: Colors.white)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Get.back(),
-        ),
+      appBar: DopamineAppBar(
+        title: 'Favorites',
+        showHomeButton: true,
       ),
       body: Obx(() {
         if (fav.favorites.isEmpty) {
@@ -75,10 +70,11 @@ class FavoritesScreen extends StatelessWidget {
                 style: const TextStyle(color: Colors.white54),
               ),
               trailing: IconButton(
-                icon: const Icon(Icons.favorite, color: Colors.red),
+                icon: const Icon(Icons.delete, color: Colors.red),
                 onPressed: () {
-                  fav.removeFavorite(item);
+                  _showRemoveConfirmation(item);
                 },
+                tooltip: 'Remove from favorites',
               ),
               onTap: () => _playMedia(item),
             );
@@ -89,8 +85,8 @@ class FavoritesScreen extends StatelessWidget {
   }
 
   Future<void> _playMedia(Map<String, dynamic> item) async {
-    final media = Get.find<MediaSwitchController>();
-    final history = Get.find<HistoryController>();
+    final media = Controllers.mediaSwitch;
+    final history = Controllers.history;
 
     Get.dialog(
       const Center(child: CircularProgressIndicator(color: Colors.white)),
@@ -135,5 +131,39 @@ class FavoritesScreen extends StatelessWidget {
       Get.snackbar('Error', 'Failed to load media: $e',
           snackPosition: SnackPosition.BOTTOM);
     }
+  }
+
+  void _showRemoveConfirmation(Map<String, dynamic> item) {
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text('Remove from Favorites', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'Remove "${item['title']}" from favorites?',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () {
+              Controllers.favorites.removeFavorite(item);
+              Get.back();
+              Get.snackbar(
+                'Removed',
+                '${item['title']} removed from favorites',
+                snackPosition: SnackPosition.BOTTOM,
+                backgroundColor: Colors.red,
+                colorText: Colors.white,
+                duration: const Duration(seconds: 2),
+              );
+            },
+            child: const Text('Remove', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 }

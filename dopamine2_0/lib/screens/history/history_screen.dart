@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../controllers/history_controller.dart';
-import '../../controllers/media_switch_controller.dart';
+import '../../utils/controller_helper.dart';
+import '../../widgets/dopamine_app_bar.dart';
 import '../../routes/app_routes.dart';
 
 class HistoryScreen extends StatelessWidget {
@@ -10,21 +10,17 @@ class HistoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final history = Get.find<HistoryController>();
+    final history = Controllers.history;
 
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: const Text('History', style: TextStyle(color: Colors.white)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Get.back(),
-        ),
+      appBar: DopamineAppBar(
+        title: 'History',
+        showHomeButton: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_sweep, color: Colors.white),
-            onPressed: () => _showClearHistoryDialog(history),
+            icon: const Icon(Icons.delete_sweep),
+            onPressed: () => _showClearHistoryDialog(),
           ),
         ],
       ),
@@ -87,7 +83,7 @@ class HistoryScreen extends StatelessWidget {
   }
 
   Future<void> _playMedia(Map<String, dynamic> item) async {
-    final media = Get.find<MediaSwitchController>();
+    final media = Controllers.mediaSwitch;
 
     media.loadMedia(
       title: item['title'] ?? '',
@@ -99,7 +95,7 @@ class HistoryScreen extends StatelessWidget {
     Get.toNamed(Routes.AUDIO_PLAYER, arguments: item);
   }
 
-  void _showClearHistoryDialog(HistoryController history) {
+  void _showClearHistoryDialog() {
     Get.dialog(
       AlertDialog(
         backgroundColor: Colors.grey[900],
@@ -115,7 +111,7 @@ class HistoryScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
-              history.clearHistory();
+              Controllers.history.clearHistory();
               Get.back();
               Get.snackbar(
                 'History Cleared',

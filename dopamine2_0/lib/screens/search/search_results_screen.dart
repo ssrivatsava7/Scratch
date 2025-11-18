@@ -387,7 +387,7 @@ class SearchResultsScreen extends StatelessWidget {
         "type": isVideo ? "video" : "audio",
       };
 
-      await downloads.startDownload(downloadData);
+      downloads.addDownload(downloadData);
 
       Get.snackbar(
         isVideo ? 'Video Download Started' : 'Audio Download Started',

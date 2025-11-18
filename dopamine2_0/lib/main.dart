@@ -25,15 +25,15 @@ void main() async {
     /// Initialize GetStorage
     await GetStorage.init();
 
-    /// Initialize all controllers
-    Get.put(FavoritesController());
-    Get.put(PlaylistController());
-    Get.put(DownloadController());
-    Get.put(MiniPlayerController());
-    Get.put(MediaSwitchController());
-    Get.put(HistoryController());
-    Get.put(search.SearchController());
-    Get.put(NavController());
+    /// Initialize all controllers as permanent for global access
+    Get.put(FavoritesController(), permanent: true);
+    Get.put(PlaylistController(), permanent: true);
+    Get.put(DownloadController(), permanent: true);
+    Get.put(MiniPlayerController(), permanent: true);
+    Get.put(MediaSwitchController(), permanent: true);
+    Get.put(HistoryController(), permanent: true);
+    Get.put(search.SearchController(), permanent: true);
+    Get.put(NavController(), permanent: true);
 
     runApp(const DopamineApp());
   } catch (e) {

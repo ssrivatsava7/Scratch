@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../controllers/playlist_controller.dart';
-import '../../controllers/media_switch_controller.dart';
-import '../../controllers/history_controller.dart';
-import '../../widgets/add_to_playlist_modal.dart';
+import '../../utils/controller_helper.dart';
+import '../../widgets/dopamine_app_bar.dart';
 import '../../routes/app_routes.dart';
 
 class PlaylistDetailScreen extends StatelessWidget {
@@ -12,18 +10,14 @@ class PlaylistDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final playlistController = Get.find<PlaylistController>();
+    final playlistController = Controllers.playlist;
     final String playlistName = Get.arguments as String;
 
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: Text(playlistName, style: const TextStyle(color: Colors.white)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Get.back(),
-        ),
+      appBar: DopamineAppBar(
+        title: playlistName,
+        showHomeButton: true,
       ),
       body: Obx(() {
         final playlist = playlistController.playlists.firstWhereOrNull(
@@ -96,8 +90,9 @@ class PlaylistDetailScreen extends StatelessWidget {
               trailing: IconButton(
                 icon: const Icon(Icons.delete, color: Colors.red),
                 onPressed: () {
-                  playlistController.removeFromPlaylist(playlistName, itemMap["id"] ?? "");
+                  _showRemoveConfirmation(playlistName, itemMap);
                 },
+                tooltip: 'Remove from playlist',
               ),
               onTap: () => _playMedia(itemMap),
             );
@@ -108,8 +103,8 @@ class PlaylistDetailScreen extends StatelessWidget {
   }
 
   Future<void> _playMedia(Map<String, dynamic> item) async {
-    final media = Get.find<MediaSwitchController>();
-    final history = Get.find<HistoryController>();
+    final media = Controllers.mediaSwitch;
+    final history = Controllers.history;
 
     Get.dialog(
       const Center(child: CircularProgressIndicator(color: Colors.white)),
@@ -143,5 +138,40 @@ class PlaylistDetailScreen extends StatelessWidget {
       Get.snackbar('Error', 'Failed to load media: $e',
           snackPosition: SnackPosition.BOTTOM);
     }
+  }
+
+  void _showRemoveConfirmation(String playlistName, Map<String, dynamic> item) {
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text('Remove from Playlist', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'Remove "${item['title']}" from this playlist?',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () {
+              final itemId = item['id'] ?? item['videoId'] ?? '';
+              Controllers.playlist.removeFromPlaylist(playlistName, itemId);
+              Get.back();
+              Get.snackbar(
+                'Removed',
+                '${item['title']} removed from playlist',
+                snackPosition: SnackPosition.BOTTOM,
+                backgroundColor: Colors.orange,
+                colorText: Colors.white,
+                duration: const Duration(seconds: 2),
+              );
+            },
+            child: const Text('Remove', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 }

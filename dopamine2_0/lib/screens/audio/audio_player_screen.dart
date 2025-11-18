@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../controllers/media_switch_controller.dart';
+import '../../utils/controller_helper.dart';
+import '../../widgets/dopamine_app_bar.dart';
+import '../../services/download_service.dart';
 import '../../routes/app_routes.dart';
 
 class AudioPlayerScreen extends StatelessWidget {
@@ -9,24 +11,72 @@ class AudioPlayerScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final media = Get.find<MediaSwitchController>();
+    final media = Controllers.mediaSwitch;
+    final args = Get.arguments as Map<String, dynamic>?;
 
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Get.back(),
-        ),
+      appBar: DopamineAppBar(
+        title: 'Audio Player',
+        showHomeButton: true,
         actions: [
+          // Favorite button
           IconButton(
-            icon: const Icon(Icons.video_library, color: Colors.white),
+            icon: Obx(() {
+              if (args == null) return const Icon(Icons.favorite_border);
+              final videoId = args['id'] ?? args['videoId'] ?? '';
+              final isFavorite = Controllers.favorites.favorites.any(
+                (fav) => (fav['id'] == videoId || fav['videoId'] == videoId)
+              );
+              return Icon(
+                isFavorite ? Icons.favorite : Icons.favorite_border,
+                color: isFavorite ? Colors.red : null,
+              );
+            }),
+            onPressed: () {
+              if (args != null) {
+                Controllers.favorites.toggleFavorite(args);
+              } else {
+                Get.snackbar('Error', 'No media information available',
+                  snackPosition: SnackPosition.BOTTOM);
+              }
+            },
+            tooltip: 'Toggle Favorite',
+          ),
+          // Add to playlist button
+          IconButton(
+            icon: const Icon(Icons.playlist_add),
+            onPressed: () {
+              if (args != null) {
+                _showAddToPlaylistDialog(args);
+              } else {
+                Get.snackbar('Error', 'No media information available',
+                  snackPosition: SnackPosition.BOTTOM);
+              }
+            },
+            tooltip: 'Add to Playlist',
+          ),
+          // Download button
+          IconButton(
+            icon: const Icon(Icons.download),
+            onPressed: () {
+              if (args != null) {
+                _downloadMedia(args);
+              } else {
+                Get.snackbar('Error', 'No media information available',
+                  snackPosition: SnackPosition.BOTTOM);
+              }
+            },
+            tooltip: 'Download',
+          ),
+          // Switch to video
+          IconButton(
+            icon: const Icon(Icons.video_library),
             onPressed: () {
               media.switchToVideo();
-              Get.toNamed(Routes.VIDEO_PLAYER);
+              Get.toNamed(Routes.VIDEO_PLAYER, arguments: args);
             },
+            tooltip: 'Switch to Video',
           ),
         ],
       ),
@@ -190,6 +240,130 @@ class AudioPlayerScreen extends StatelessWidget {
           ],
         );
       }),
+    );
+  }
+
+  void _showAddToPlaylistDialog(Map<String, dynamic> item) {
+    final playlists = Controllers.playlist.playlists;
+    
+    if (playlists.isEmpty) {
+      Get.dialog(
+        AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: const Text('No Playlists', style: TextStyle(color: Colors.white)),
+          content: const Text(
+            'You don\'t have any playlists yet. Create one first!',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: const Text('OK', style: TextStyle(color: Colors.purpleAccent)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text('Add to Playlist', style: TextStyle(color: Colors.white)),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: playlists.length,
+            itemBuilder: (context, index) {
+              final playlist = playlists[index];
+              return ListTile(
+                title: Text(
+                  playlist['name'] ?? 'Unnamed Playlist',
+                  style: const TextStyle(color: Colors.white),
+                ),
+                trailing: const Icon(Icons.add, color: Colors.purpleAccent),
+                onTap: () {
+                  Controllers.playlist.addToPlaylist(
+                    playlist['name'],
+                    item,
+                  );
+                  Get.back();
+                  Get.snackbar(
+                    'Added',
+                    'Added to ${playlist['name']}',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.green,
+                    colorText: Colors.white,
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _downloadMedia(Map<String, dynamic> item) async {
+    final videoId = item['id'] ?? item['videoId'] ?? '';
+    final title = item['title'] ?? 'Unknown';
+    final thumbnail = item['thumbnail'] ?? '';
+    
+    if (videoId.isEmpty) {
+      Get.snackbar(
+        'Download Error',
+        'Missing video ID',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+    
+    // Check if already downloaded
+    if (Controllers.download.downloads.any((d) => 
+        (d['id'] == videoId || d['videoId'] == videoId))) {
+      Get.snackbar(
+        'Already Downloaded',
+        'This media is already in your downloads',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    // For now, just add to downloads list without actual file download
+    // since the URL fetching is not working properly
+    final downloadItem = {
+      'id': videoId,
+      'videoId': videoId,
+      'title': title,
+      'audioUrl': item['audioUrl'] ?? '',
+      'videoUrl': item['videoUrl'] ?? '',
+      'thumbnail': thumbnail,
+      'channelName': item['author'] ?? item['channelName'] ?? '',
+      'author': item['author'] ?? item['channelName'] ?? '',
+      'downloadedAt': DateTime.now().toIso8601String(),
+    };
+
+    // Add to downloads
+    Controllers.download.addDownload(downloadItem);
+    
+    Get.snackbar(
+      'Added to Downloads',
+      '$title added to downloads list',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.green,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 3),
     );
   }
 

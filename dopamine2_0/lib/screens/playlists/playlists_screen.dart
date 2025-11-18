@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../controllers/playlist_controller.dart';
+import '../../utils/controller_helper.dart';
+import '../../widgets/dopamine_app_bar.dart';
 import '../../routes/app_routes.dart';
 
 class PlaylistsScreen extends StatelessWidget {
@@ -9,21 +10,17 @@ class PlaylistsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final playlistController = Get.find<PlaylistController>();
+    final playlistController = Controllers.playlist;
 
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: const Text('Playlists', style: TextStyle(color: Colors.white)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Get.back(),
-        ),
+      appBar: DopamineAppBar(
+        title: 'Playlists',
+        showHomeButton: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.add, color: Colors.white),
-            onPressed: () => _showCreatePlaylistDialog(playlistController),
+            icon: const Icon(Icons.add),
+            onPressed: () => _showCreatePlaylistDialog(),
           ),
         ],
       ),
@@ -70,7 +67,7 @@ class PlaylistsScreen extends StatelessWidget {
               ),
               trailing: IconButton(
                 icon: const Icon(Icons.delete, color: Colors.red),
-                onPressed: () => _showDeletePlaylistDialog(playlistController, playlistName),
+                onPressed: () => _showDeletePlaylistDialog(playlistName),
               ),
               onTap: () {
                 Get.toNamed(Routes.PLAYLIST_DETAIL, arguments: playlistName);
@@ -82,7 +79,7 @@ class PlaylistsScreen extends StatelessWidget {
     );
   }
 
-  void _showCreatePlaylistDialog(PlaylistController controller) {
+  void _showCreatePlaylistDialog() {
     final textController = TextEditingController();
 
     Get.dialog(
@@ -111,7 +108,7 @@ class PlaylistsScreen extends StatelessWidget {
           TextButton(
             onPressed: () {
               if (textController.text.trim().isNotEmpty) {
-                controller.createPlaylist(textController.text.trim());
+                Controllers.playlist.createPlaylist(textController.text.trim());
                 Get.back();
               }
             },
@@ -122,7 +119,7 @@ class PlaylistsScreen extends StatelessWidget {
     );
   }
 
-  void _showDeletePlaylistDialog(PlaylistController controller, String playlistName) {
+  void _showDeletePlaylistDialog(String playlistName) {
     Get.dialog(
       AlertDialog(
         backgroundColor: Colors.grey[900],
@@ -138,7 +135,7 @@ class PlaylistsScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
-              controller.deletePlaylist(playlistName);
+              Controllers.playlist.deletePlaylist(playlistName);
               Get.back();
               Get.snackbar(
                 'Deleted',

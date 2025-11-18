@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
-import '../../controllers/media_switch_controller.dart';
+import '../../utils/controller_helper.dart';
+import '../../services/download_service.dart';
 import '../../routes/app_routes.dart';
 
 class VideoPlayerScreen extends StatelessWidget {
@@ -10,7 +11,8 @@ class VideoPlayerScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final media = Get.find<MediaSwitchController>();
+    final media = Controllers.mediaSwitch;
+    final args = Get.arguments as Map<String, dynamic>?;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -46,14 +48,61 @@ class VideoPlayerScreen extends StatelessWidget {
                       icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
                       onPressed: () => Get.back(),
                     ),
+                    IconButton(
+                      icon: const Icon(Icons.home, color: Colors.white, size: 28),
+                      onPressed: () => Get.offAllNamed('/'),
+                      tooltip: 'Home',
+                    ),
                     const Spacer(),
+                    // Favorite button
+                    IconButton(
+                      icon: Icon(
+                        args != null && Controllers.favorites.favorites.any(
+                          (fav) => (fav['id'] == (args['id'] ?? args['videoId'])) ||
+                                   (fav['videoId'] == (args['id'] ?? args['videoId']))
+                        ) ? Icons.favorite : Icons.favorite_border,
+                        color: args != null && Controllers.favorites.favorites.any(
+                          (fav) => (fav['id'] == (args['id'] ?? args['videoId'])) ||
+                                   (fav['videoId'] == (args['id'] ?? args['videoId']))
+                        ) ? Colors.red : Colors.white,
+                        size: 24,
+                      ),
+                      onPressed: () {
+                        if (args != null) {
+                          Controllers.favorites.toggleFavorite(args);
+                        }
+                      },
+                      tooltip: 'Toggle Favorite',
+                    ),
+                    // Add to playlist
+                    IconButton(
+                      icon: const Icon(Icons.playlist_add, color: Colors.white, size: 24),
+                      onPressed: () {
+                        if (args != null) {
+                          _showAddToPlaylistDialog(args);
+                        }
+                      },
+                      tooltip: 'Add to Playlist',
+                    ),
+                    // Download
+                    IconButton(
+                      icon: const Icon(Icons.download, color: Colors.white, size: 24),
+                      onPressed: () {
+                        if (args != null) {
+                          _downloadMedia(args);
+                        }
+                      },
+                      tooltip: 'Download',
+                    ),
+                    // Switch to audio
                     IconButton(
                       icon: const Icon(Icons.music_note, color: Colors.white, size: 28),
                       onPressed: () {
                         media.switchToAudio();
                         Get.back();
-                        Get.toNamed(Routes.AUDIO_PLAYER);
+                        Get.toNamed(Routes.AUDIO_PLAYER, arguments: args);
                       },
+                      tooltip: 'Switch to Audio',
                     ),
                   ],
                 ),
@@ -187,6 +236,129 @@ class VideoPlayerScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _showAddToPlaylistDialog(Map<String, dynamic> item) {
+    final playlists = Controllers.playlist.playlists;
+    
+    if (playlists.isEmpty) {
+      Get.dialog(
+        AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: const Text('No Playlists', style: TextStyle(color: Colors.white)),
+          content: const Text(
+            'You don\'t have any playlists yet. Create one first!',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: const Text('OK', style: TextStyle(color: Colors.purpleAccent)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text('Add to Playlist', style: TextStyle(color: Colors.white)),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: playlists.length,
+            itemBuilder: (context, index) {
+              final playlist = playlists[index];
+              return ListTile(
+                title: Text(
+                  playlist['name'] ?? 'Unnamed Playlist',
+                  style: const TextStyle(color: Colors.white),
+                ),
+                trailing: const Icon(Icons.add, color: Colors.purpleAccent),
+                onTap: () {
+                  Controllers.playlist.addToPlaylist(
+                    playlist['name'],
+                    item,
+                  );
+                  Get.back();
+                  Get.snackbar(
+                    'Added',
+                    'Added to ${playlist['name']}',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.green,
+                    colorText: Colors.white,
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _downloadMedia(Map<String, dynamic> item) async {
+    final videoId = item['id'] ?? item['videoId'] ?? '';
+    final title = item['title'] ?? 'Unknown';
+    final thumbnail = item['thumbnail'] ?? '';
+    
+    if (videoId.isEmpty) {
+      Get.snackbar(
+        'Download Error',
+        'Missing video ID',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+    
+    // Check if already downloaded
+    if (Controllers.download.downloads.any((d) => 
+        (d['id'] == videoId || d['videoId'] == videoId))) {
+      Get.snackbar(
+        'Already Downloaded',
+        'This media is already in your downloads',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    // For now, just add to downloads list
+    final downloadItem = {
+      'id': videoId,
+      'videoId': videoId,
+      'title': title,
+      'audioUrl': item['audioUrl'] ?? '',
+      'videoUrl': item['videoUrl'] ?? '',
+      'thumbnail': thumbnail,
+      'channelName': item['author'] ?? item['channelName'] ?? '',
+      'author': item['author'] ?? item['channelName'] ?? '',
+      'downloadedAt': DateTime.now().toIso8601String(),
+    };
+
+    // Add to downloads
+    Controllers.download.addDownload(downloadItem);
+    
+    Get.snackbar(
+      'Added to Downloads',
+      '$title added to downloads list',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.green,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 3),
     );
   }
 

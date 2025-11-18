@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../controllers/media_switch_controller.dart';
+import '../utils/controller_helper.dart';
 import '../routes/app_routes.dart';
 
 class AuroraMiniPlayer extends StatelessWidget {
@@ -9,7 +9,7 @@ class AuroraMiniPlayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final media = Get.find<MediaSwitchController>();
+    final media = Controllers.mediaSwitch;
 
     return Obx(() {
       // Don't show mini player if no media is loaded

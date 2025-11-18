@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/aurora_navbar.dart';
-import '../../controllers/nav_controller.dart';
+import '../../utils/controller_helper.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -124,8 +124,7 @@ class HomeScreen extends StatelessWidget {
       bottomNavigationBar: AuroraNavbar(
         currentIndex: 0,
         onTap: (index) {
-          final nav = Get.find<NavController>();
-          nav.changePage(index);
+          Controllers.nav.changePage(index);
         },
       ),
     );
