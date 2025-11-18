@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
+import '../../models/media_item.dart';
+import '../../widgets/dopamine_app_bar.dart';
 import '../../utils/controller_helper.dart';
 import '../../widgets/dopamine_app_bar.dart';
+import '../../models/media_item.dart';
 import '../../routes/app_routes.dart';
+import '../../theme/midnight_aurora_theme.dart';
 
 class PlaylistDetailScreen extends StatelessWidget {
   const PlaylistDetailScreen({super.key});
@@ -37,7 +40,7 @@ class PlaylistDetailScreen extends StatelessWidget {
         final items = (itemsList is List) ? itemsList : [];
 
         if (items.isEmpty) {
-          return const Center(
+          return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -86,14 +89,50 @@ class PlaylistDetailScreen extends StatelessWidget {
               subtitle: Text(
                 itemMap['author'] ?? '',
                 style: const TextStyle(color: Colors.white54),
-              ),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete, color: Colors.red),
-                onPressed: () {
-                  _showRemoveConfirmation(playlistName, itemMap);
-                },
-                tooltip: 'Remove from playlist',
-              ),
+              ),                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.play_arrow, color: Colors.purpleAccent),
+                        onPressed: () async {
+                          Controllers.history.addToHistory(item);
+
+                          final mediaItem = MediaItem.fromJson(item);
+                          await Controllers.mediaSwitch.loadMedia(
+                            title: mediaItem.title,
+                            thumbnail: mediaItem.thumbnailUrl,
+                            audio: mediaItem.audioUrl,
+                            video: mediaItem.videoUrl,
+                          );
+
+                          Get.toNamed(Routes.AUDIO_PLAYER, arguments: item);
+                        },
+                        tooltip: 'Play Audio',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.videocam, color: Colors.purpleAccent),
+                        onPressed: () async {
+                          final mediaItem = MediaItem.fromJson(item);
+                          await Controllers.mediaSwitch.loadMedia(
+                            title: mediaItem.title,
+                            thumbnail: mediaItem.thumbnailUrl,
+                            audio: mediaItem.audioUrl,
+                            video: mediaItem.videoUrl,
+                          );
+                          Controllers.mediaSwitch.switchToVideo();
+                          Get.toNamed(Routes.VIDEO_PLAYER, arguments: item);
+                        },
+                        tooltip: 'Play Video',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.remove_circle, color: Colors.red),
+                        onPressed: () {
+                          _showRemoveConfirmation(item);
+                        },
+                        tooltip: 'Remove from Playlist',
+                      ),
+                    ],
+                  ),
               onTap: () => _playMedia(itemMap),
             );
           },
@@ -140,35 +179,37 @@ class PlaylistDetailScreen extends StatelessWidget {
     }
   }
 
-  void _showRemoveConfirmation(String playlistName, Map<String, dynamic> item) {
+  void _showRemoveConfirmation(Map<String, dynamic> item) {
+    final playlistName = Get.parameters['name'] ?? '';
+    
     Get.dialog(
       AlertDialog(
         backgroundColor: Colors.grey[900],
-        title: const Text('Remove from Playlist', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Remove from Playlist',
+          style: TextStyle(color: Colors.white),
+        ),
         content: Text(
-          'Remove "${item['title']}" from this playlist?',
+          'Remove "${item['title'] ?? 'this item'}" from "$playlistName"?',
           style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white54),
+            ),
           ),
           TextButton(
             onPressed: () {
-              final itemId = item['id'] ?? item['videoId'] ?? '';
-              Controllers.playlist.removeFromPlaylist(playlistName, itemId);
               Get.back();
-              Get.snackbar(
-                'Removed',
-                '${item['title']} removed from playlist',
-                snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: Colors.orange,
-                colorText: Colors.white,
-                duration: const Duration(seconds: 2),
-              );
+              Controllers.playlist.removeFromPlaylist(playlistName, item);
             },
-            child: const Text('Remove', style: TextStyle(color: Colors.red)),
+            child: const Text(
+              'Remove',
+              style: TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),

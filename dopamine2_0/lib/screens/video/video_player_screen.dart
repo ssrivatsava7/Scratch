@@ -324,8 +324,7 @@ class VideoPlayerScreen extends StatelessWidget {
     }
     
     // Check if already downloaded
-    if (Controllers.download.downloads.any((d) => 
-        (d['id'] == videoId || d['videoId'] == videoId))) {
+    if (Controllers.download.downloads.any((d) => d.videoId == videoId)) {
       Get.snackbar(
         'Already Downloaded',
         'This media is already in your downloads',
@@ -336,30 +335,18 @@ class VideoPlayerScreen extends StatelessWidget {
       return;
     }
 
-    // For now, just add to downloads list
+    // Create download item and start download
     final downloadItem = {
-      'id': videoId,
       'videoId': videoId,
       'title': title,
-      'audioUrl': item['audioUrl'] ?? '',
-      'videoUrl': item['videoUrl'] ?? '',
       'thumbnail': thumbnail,
-      'channelName': item['author'] ?? item['channelName'] ?? '',
-      'author': item['author'] ?? item['channelName'] ?? '',
-      'downloadedAt': DateTime.now().toIso8601String(),
+      'artist': item['author'] ?? item['channelName'],
+      'album': item['album'],
+      'duration': item['duration'],
     };
 
-    // Add to downloads
-    Controllers.download.addDownload(downloadItem);
-    
-    Get.snackbar(
-      'Added to Downloads',
-      '$title added to downloads list',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.green,
-      colorText: Colors.white,
-      duration: const Duration(seconds: 3),
-    );
+    // Add to downloads - this will trigger actual file download
+    await Controllers.download.addDownload(downloadItem);
   }
 
   String _formatDuration(Duration duration) {

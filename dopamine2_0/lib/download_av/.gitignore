@@ -1,0 +1,8 @@
+# Ignore all downloaded audio/video files
+*.m4a
+*.mp4
+*.mp3
+*.webm
+
+# Keep the README
+!README.md

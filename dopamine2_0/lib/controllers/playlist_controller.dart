@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
-import '../models/media_item.dart';
+
 import '../services/storage_service.dart';
 
 class PlaylistController extends GetxController {
@@ -56,14 +56,14 @@ class PlaylistController extends GetxController {
   void createPlaylist(String name) {
     playlists.add({
       "name": name,
-      "tracks": <MediaItem>[],
+      "tracks": [],
     });
   }
 
   /// --------------------------------------------------------
   /// ADD TRACK (UI calls this for modal)
   /// --------------------------------------------------------
-  void addTrack(String playlistName, MediaItem item) {
+  void addTrack(String playlistName, Map<String, dynamic> item) {
     final index = playlists.indexWhere((p) => p["name"] == playlistName);
     if (index != -1) {
       playlists[index]["tracks"].add(item);
@@ -91,12 +91,42 @@ class PlaylistController extends GetxController {
     playlists.refresh();
   }
 
-  void removeFromPlaylist(String playlistName, MediaItem item) {
+  void removeTrackFromPlaylist(String playlistName, Map<String, dynamic> item) {
     final index = playlists.indexWhere((p) => p["name"] == playlistName);
     if (index != -1) {
       playlists[index]["tracks"].remove(item);
       playlists.refresh();
     }
+  }
+
+  void removeFromPlaylist(String playlistName, Map<String, dynamic> item) {
+    final index = playlists.indexWhere((p) => p['name'] == playlistName);
+    if (index == -1) {
+      Get.snackbar('Error', 'Playlist not found');
+      return;
+    }
+
+    final playlist = playlists[index];
+    final items = List<Map<String, dynamic>>.from(playlist['items'] ?? []);
+    
+    // Remove item by id or videoId
+    final itemId = item['id'] ?? item['videoId'];
+    items.removeWhere((i) => (i['id'] == itemId || i['videoId'] == itemId));
+    
+    playlist['items'] = items;
+    playlists[index] = playlist;
+    
+    StorageService.savePlaylists(playlists);
+    playlists.refresh();
+    
+    Get.snackbar(
+      'Removed',
+      'Removed from $playlistName',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 2),
+    );
   }
 
   /// --------------------------------------------------------

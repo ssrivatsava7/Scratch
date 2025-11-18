@@ -64,14 +64,15 @@ class YouTubeService {
       return null;
     }
   }
+
   // Get related videos
   static Future<List<Map<String, dynamic>>> getRelated(String videoId) async {
     try {
       final video = await _yt.videos.get(videoId);
       final related = await _yt.videos.getRelatedVideos(video);
-      
+
       if (related == null) return [];
-      
+
       return related.take(10).map((video) {
         return {
           'id': video.id.value,
@@ -85,6 +86,28 @@ class YouTubeService {
     } catch (e) {
       print('Related videos error: $e');
       return [];
+    }
+  }
+
+  // Get audio stream URL for downloading
+  static  Future<String?> getAudioStreamUrl(String videoId) async {
+    try {
+      final manifest = await _yt.videos.streamsClient.getManifest(videoId);
+      
+      // Get the best audio-only stream
+      final audioStreams = manifest.audioOnly;
+      if (audioStreams.isEmpty) {
+        return null;
+      }
+      
+      // Sort by bitrate and get the best one
+      audioStreams.sort((a, b) => b.bitrate.compareTo(a.bitrate));
+      final bestAudio = audioStreams.first;
+      
+      return bestAudio.url.toString();
+    } catch (e) {
+      print('Error getting audio stream URL: $e');
+      return null;
     }
   }
 
