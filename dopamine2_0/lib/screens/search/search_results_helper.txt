@@ -1,0 +1,83 @@
+// Add this method to your SearchResultsScreen class
+
+void _showRemoveFromPlaylistDialog(Map<String, dynamic> item) {
+  final playlists = Controllers.playlist.playlists;
+  
+  // Find playlists that contain this item
+  final itemId = item['id'] ?? item['videoId'];
+  final playlistsWithItem = playlists.where((p) {
+    final items = p['items'] ?? p['tracks'] ?? [];
+    return items.any((i) => (i['id'] == itemId || i['videoId'] == itemId));
+  }).toList();
+  
+  if (playlistsWithItem.isEmpty) {
+    Get.snackbar(
+      'Not in Playlists',
+      'This item is not in any playlists',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.orange,
+      colorText: Colors.white,
+    );
+    return;
+  }
+  
+  Get.dialog(
+    AlertDialog(
+      backgroundColor: Colors.grey[900],
+      title: const Text(
+        'Remove from Playlist',
+        style: TextStyle(color: Colors.white),
+      ),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Select playlist to remove "${item['title'] ?? 'this item'}" from:',
+              style: const TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 16),
+            ...playlistsWithItem.map((playlist) {
+              return ListTile(
+                title: Text(
+                  playlist['name'] ?? 'Unnamed Playlist',
+                  style: const TextStyle(color: Colors.white),
+                ),
+                leading: const Icon(Icons.playlist_remove, color: Colors.red),
+                onTap: () {
+                  Get.back();
+                  Controllers.playlist.removeFromPlaylist(
+                    playlist['name'],
+                    item,
+                  );
+                },
+              );
+            }).toList(),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(),
+          child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+        ),
+      ],
+    ),
+  );
+}
+
+void _downloadAudio(Map<String, dynamic> item) async {
+  await Controllers.download.addDownload(item);
+}
+
+void _downloadVideo(Map<String, dynamic> item) async {
+  await Controllers.download.addDownload(item);
+  Get.snackbar(
+    'Download Started',
+    'Video download functionality coming soon. Audio downloaded instead.',
+    snackPosition: SnackPosition.BOTTOM,
+    backgroundColor: Colors.blue,
+    colorText: Colors.white,
+  );
+}

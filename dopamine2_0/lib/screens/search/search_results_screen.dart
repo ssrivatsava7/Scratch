@@ -6,6 +6,7 @@ import '../../controllers/media_switch_controller.dart';
 import '../../controllers/history_controller.dart';
 import '../../controllers/favorites_controller.dart';
 import '../../controllers/download_controller.dart';
+import '../../controllers/playlist_controller.dart';
 
 import '../../widgets/playlist_picker_sheet.dart';
 import '../../routes/app_routes.dart';
@@ -105,6 +106,8 @@ class SearchResultsScreen extends StatelessWidget {
                     _downloadMedia(item, isVideo: false);
                   } else if (value == "download_video") {
                     _downloadMedia(item, isVideo: true);
+                  } else if (value == "remove_playlist") {
+                    _showRemoveFromPlaylistDialog(mapData);
                   }
                 },
                 itemBuilder: (context) => [
@@ -164,6 +167,16 @@ class SearchResultsScreen extends StatelessWidget {
                             Icon(Icons.video_file, color: Colors.white70),
                             SizedBox(width: 12),
                             Text("Download Video", style: TextStyle(color: Colors.white)),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: "remove_playlist",
+                        child: Row(
+                          children: [
+                            Icon(Icons.playlist_remove, color: Colors.white70),
+                            SizedBox(width: 12),
+                            Text("Remove from Playlist", style: TextStyle(color: Colors.white)),
                           ],
                         ),
                       ),
@@ -404,5 +417,76 @@ class SearchResultsScreen extends StatelessWidget {
           backgroundColor: Colors.red,
           colorText: Colors.white);
     }
+  }
+
+  // -----------------------------------------------------
+  // REMOVE FROM PLAYLIST DIALOG
+  // -----------------------------------------------------
+  void _showRemoveFromPlaylistDialog(Map<String, dynamic> item) {
+    final playlistController = Get.find<PlaylistController>();
+    final playlists = playlistController.playlists;
+    
+    // Find playlists that contain this item
+    final itemId = item['id'] ?? item['videoId'];
+    final playlistsWithItem = playlists.where((p) {
+      final items = p['items'] ?? p['tracks'] ?? [];
+      return items.any((i) => (i['id'] == itemId || i['videoId'] == itemId));
+    }).toList();
+    
+    if (playlistsWithItem.isEmpty) {
+      Get.snackbar(
+        'Not in Playlists',
+        'This item is not in any playlists',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
+      return;
+    }
+    
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text(
+          'Remove from Playlist',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Select playlist to remove "${item['title'] ?? 'this item'}" from:',
+                style: const TextStyle(color: Colors.white70),
+              ),
+              const SizedBox(height: 16),
+              ...playlistsWithItem.map((playlist) {
+                return ListTile(
+                  title: Text(
+                    playlist['name'] ?? 'Unnamed Playlist',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  leading: const Icon(Icons.playlist_remove, color: Colors.red),
+                  onTap: () {
+                    Get.back();
+                    playlistController.removeFromPlaylist(
+                      playlist['name'],
+                      item,
+                    );
+                  },
+                );
+              }).toList(),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          ),
+        ],
+      ),
+    );
   }
 }

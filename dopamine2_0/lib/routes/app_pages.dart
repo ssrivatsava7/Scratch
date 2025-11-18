@@ -7,6 +7,7 @@ import '../screens/search/search_screen.dart'; // Ensure this file defines 'Sear
 import '../screens/search/search_results_screen.dart';
 import '../screens/playlists/playlists_screen.dart';
 import '../screens/playlists/playlist_detail_screen.dart';
+
 import '../screens/favorites/favorites_screen.dart';
 import '../screens/history/history_screen.dart';
 import '../screens/downloads/downloads_screen.dart';

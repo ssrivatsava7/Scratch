@@ -56,8 +56,10 @@ class PlaylistController extends GetxController {
   void createPlaylist(String name) {
     playlists.add({
       "name": name,
-      "tracks": [],
+      "items": [],
     });
+    StorageService.savePlaylists(playlists);
+    playlists.refresh();
   }
 
   /// --------------------------------------------------------
@@ -66,7 +68,15 @@ class PlaylistController extends GetxController {
   void addTrack(String playlistName, Map<String, dynamic> item) {
     final index = playlists.indexWhere((p) => p["name"] == playlistName);
     if (index != -1) {
-      playlists[index]["tracks"].add(item);
+      // Handle both 'items' and 'tracks' keys
+      final itemsKey = playlists[index].containsKey('items') ? 'items' : 'tracks';
+      
+      if (playlists[index][itemsKey] == null) {
+        playlists[index][itemsKey] = [];
+      }
+      
+      playlists[index][itemsKey].add(item);
+      StorageService.savePlaylists(playlists);
       playlists.refresh();
     }
   }
@@ -78,13 +88,27 @@ class PlaylistController extends GetxController {
     final playlist =
         playlists.firstWhere((p) => p["name"] == playlistName, orElse: () => {});
 
-    if (playlist.isEmpty) return;
+    if (playlist.isEmpty) {
+      print('Playlist "$playlistName" not found');
+      return;
+    }
 
-    final RxList list = playlist["items"];
+    // Handle both 'items' and 'tracks' keys
+    final itemsKey = playlist.containsKey('items') ? 'items' : 'tracks';
+    
+    if (playlist[itemsKey] == null) {
+      playlist[itemsKey] = RxList<Map<String, dynamic>>([]);
+    }
+    
+    final RxList list = playlist[itemsKey];
 
-    // No duplicates
-    if (!list.any((e) => e["id"] == item["id"])) {
+    // No duplicates - check both id and videoId
+    final itemId = item['id'] ?? item['videoId'];
+    if (!list.any((e) => (e["id"] == itemId || e["videoId"] == itemId))) {
       list.insert(0, item);
+      print('Added "${item["title"]}" to "$playlistName"');
+    } else {
+      print('Item already exists in "$playlistName"');
     }
 
     StorageService.savePlaylists(playlists);
@@ -94,27 +118,87 @@ class PlaylistController extends GetxController {
   void removeTrackFromPlaylist(String playlistName, Map<String, dynamic> item) {
     final index = playlists.indexWhere((p) => p["name"] == playlistName);
     if (index != -1) {
-      playlists[index]["tracks"].remove(item);
+      // Handle both 'items' and 'tracks' keys
+      final itemsKey = playlists[index].containsKey('items') ? 'items' : 'tracks';
+      playlists[index][itemsKey].remove(item);
+      StorageService.savePlaylists(playlists);
       playlists.refresh();
     }
   }
 
   void removeFromPlaylist(String playlistName, Map<String, dynamic> item) {
+    print('=== REMOVE FROM PLAYLIST DEBUG ===');
+    print('Playlist name: "$playlistName"');
+    print('Item to remove: ${item["title"]} (id: ${item["id"]}, videoId: ${item["videoId"]})');
+    print('Available playlists: ${playlists.map((p) => p["name"]).toList()}');
+    
     final index = playlists.indexWhere((p) => p['name'] == playlistName);
     if (index == -1) {
-      Get.snackbar('Error', 'Playlist not found');
+      print('ERROR: Playlist "$playlistName" not found!');
+      Get.snackbar(
+        'Error', 
+        'Playlist "$playlistName" not found',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
       return;
     }
 
+    print('Playlist found at index: $index');
     final playlist = playlists[index];
-    final items = List<Map<String, dynamic>>.from(playlist['items'] ?? []);
     
-    // Remove item by id or videoId
-    final itemId = item['id'] ?? item['videoId'];
-    items.removeWhere((i) => (i['id'] == itemId || i['videoId'] == itemId));
+    // Handle both 'items' and 'tracks' keys
+    final itemsKey = playlist.containsKey('items') ? 'items' : 'tracks';
+    print('Using key: "$itemsKey"');
     
-    playlist['items'] = items;
-    playlists[index] = playlist;
+    // Get items as RxList to modify directly
+    if (playlist[itemsKey] is RxList) {
+      final RxList rxList = playlist[itemsKey];
+      print('Current items count: ${rxList.length}');
+      
+      // Remove item by id or videoId
+      final itemId = item['id'] ?? item['videoId'];
+      final originalLength = rxList.length;
+      
+      rxList.removeWhere((i) {
+        final matches = (i['id'] == itemId || i['videoId'] == itemId);
+        if (matches) {
+          print('Found matching item: ${i["title"]}');
+        }
+        return matches;
+      });
+      
+      if (rxList.length == originalLength) {
+        print('ERROR: Item not found in playlist');
+        print('Looking for id: $itemId');
+        print('Playlist items: ${rxList.map((i) => "id:${i['id']}, videoId:${i['videoId']}").toList()}');
+        Get.snackbar(
+          'Not Found', 
+          'Item not found in playlist',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+        );
+        return;
+      }
+      
+      print('Successfully removed! New count: ${rxList.length}');
+    } else {
+      // Fallback for non-RxList
+      final items = List<Map<String, dynamic>>.from(playlist[itemsKey] ?? []);
+      final itemId = item['id'] ?? item['videoId'];
+      final originalLength = items.length;
+      items.removeWhere((i) => (i['id'] == itemId || i['videoId'] == itemId));
+      
+      if (items.length == originalLength) {
+        print('ERROR: Item not found in playlist (fallback)');
+        return;
+      }
+      
+      playlist[itemsKey] = items;
+      playlists[index] = playlist;
+    }
     
     StorageService.savePlaylists(playlists);
     playlists.refresh();
@@ -123,10 +207,12 @@ class PlaylistController extends GetxController {
       'Removed',
       'Removed from $playlistName',
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red,
+      backgroundColor: Colors.green,
       colorText: Colors.white,
       duration: const Duration(seconds: 2),
     );
+    
+    print('=== END DEBUG ===');
   }
 
   /// --------------------------------------------------------
@@ -136,5 +222,24 @@ class PlaylistController extends GetxController {
     playlists.removeWhere((e) => e["name"] == playlistName);
     StorageService.savePlaylists(playlists);
     playlists.refresh();
+  }
+
+  /// Get all tracks in a specific playlist (returns List<Map<String, dynamic>>)
+  List<Map<String, dynamic>> getPlaylistTracks(String playlistName) {
+    final playlist = playlists.firstWhereOrNull((p) => p['name'] == playlistName);
+    if (playlist == null) return [];
+    
+    // Use 'items' key which is the standard in this controller
+    final itemsKey = playlist.containsKey('items') ? 'items' : 'tracks';
+    final List<dynamic> tracksList = playlist[itemsKey] ?? [];
+    
+    return tracksList.map((trackData) {
+      if (trackData is Map<String, dynamic>) {
+        return trackData;
+      } else if (trackData is Map) {
+        return Map<String, dynamic>.from(trackData);
+      }
+      return <String, dynamic>{};
+    }).toList();
   }
 }

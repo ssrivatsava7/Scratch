@@ -70,7 +70,7 @@ class PlaylistsScreen extends StatelessWidget {
                 onPressed: () => _showDeletePlaylistDialog(playlistName),
               ),
               onTap: () {
-                Get.toNamed(Routes.PLAYLIST_DETAIL, arguments: playlistName);
+                Get.toNamed(Routes.PLAYLIST_DETAIL, parameters: {'name': playlistName});
               },
             );
           },
