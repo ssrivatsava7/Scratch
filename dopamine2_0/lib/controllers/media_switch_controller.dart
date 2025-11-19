@@ -8,9 +8,10 @@ class MediaSwitchController extends GetxController {
   late final VideoController videoController;
 
   final isPlaying = false.obs;
-  final isVideo = false.obs;
+  final isVideo = false.obs; // Ensure this exists
   final currentTitle = ''.obs;
   final currentThumbnail = ''.obs;
+  final currentArtist = ''.obs; // Add artist field
   final currentAudioUrl = ''.obs;
   final currentVideoUrl = ''.obs;
   final duration = Duration.zero.obs;

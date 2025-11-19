@@ -9,30 +9,32 @@ class AuroraMiniPlayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final media = Controllers.mediaSwitch;
-
     return Obx(() {
+      final media = Controllers.mediaSwitch;
+
       // Don't show mini player if no media is loaded
       if (media.currentTitle.value.isEmpty || media.currentThumbnail.value.isEmpty) {
         return const SizedBox.shrink();
       }
 
       return Positioned(
-        bottom: 0,
         left: 0,
         right: 0,
+        bottom: 0,
         child: GestureDetector(
           onTap: () {
+            print('=== MINI PLAYER TAPPED ===');
+            print('isVideo: ${media.isVideo.value}');
             if (media.isVideo.value) {
-              Get.toNamed(Routes.VIDEO_PLAYER);
+              Get.toNamed('/video-player');
             } else {
-              Get.toNamed(Routes.AUDIO_PLAYER);
+              Get.toNamed('/audio-player');
             }
           },
           child: Container(
-            height: 65,
-            margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            height: 70,
+            margin: const EdgeInsets.all(8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.45),
               borderRadius: BorderRadius.circular(14),
@@ -44,18 +46,18 @@ class AuroraMiniPlayer extends StatelessWidget {
               children: [
                 // Thumbnail
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(8),
                   child: Image.network(
                     media.currentThumbnail.value,
-                    height: 45,
-                    width: 45,
+                    width: 50,
+                    height: 50,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
-                        height: 45,
-                        width: 45,
-                        color: Colors.grey[800],
-                        child: const Icon(Icons.music_note, color: Colors.white54),
+                        width: 50,
+                        height: 50,
+                        color: Colors.grey,
+                        child: const Icon(Icons.music_note, color: Colors.white),
                       );
                     },
                   ),
@@ -63,28 +65,36 @@ class AuroraMiniPlayer extends StatelessWidget {
 
                 const SizedBox(width: 12),
 
-                // Title
+                // Title - Single line only, no Column to avoid overflow
                 Expanded(
                   child: Text(
                     media.currentTitle.value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
+                      fontWeight: FontWeight.w500,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
 
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
 
-                // Play / Pause Button
-                IconButton(
-                  icon: Icon(
+                // Play/Pause button
+                GestureDetector(
+                  onTap: () {
+                    if (media.isPlaying.value) {
+                      media.pause();
+                    } else {
+                      media.play();
+                    }
+                  },
+                  child: Icon(
                     media.isPlaying.value ? Icons.pause : Icons.play_arrow,
                     color: Colors.white,
+                    size: 30,
                   ),
-                  onPressed: () => media.isPlaying.value ? media.pause() : media.play(),
                 ),
               ],
             ),

@@ -51,13 +51,13 @@ class HistoryScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 child: Image.network(
                   item['thumbnail'] ?? '',
-                  width: 60,
-                  height: 60,
+                  width: 30,
+                  height: 30,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
-                      width: 60,
-                      height: 60,
+                      width: 30,
+                      height: 30,
                       color: Colors.grey[800],
                       child: const Icon(Icons.music_note, color: Colors.white54),
                     );
