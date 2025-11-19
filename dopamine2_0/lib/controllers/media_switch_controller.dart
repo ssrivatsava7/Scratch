@@ -2,43 +2,92 @@ import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:just_audio/just_audio.dart' as ja;
 
 class MediaSwitchController extends GetxController {
-  late final Player player;
+  late final Player player; // For video only
   late final VideoController videoController;
+  late final ja.AudioPlayer audioPlayer; // For audio only
 
-  final isPlaying = false.obs;
-  final isVideo = false.obs; // Ensure this exists
   final currentTitle = ''.obs;
   final currentThumbnail = ''.obs;
-  final currentArtist = ''.obs; // Add artist field
+  final currentArtist = ''.obs;
+  final isPlaying = false.obs;
+  final isVideo = false.obs;
+  final position = Duration.zero.obs;
+  final duration = Duration.zero.obs;
+  final isLoading = false.obs;
+  
   final currentAudioUrl = ''.obs;
   final currentVideoUrl = ''.obs;
-  final duration = Duration.zero.obs;
-  final position = Duration.zero.obs;
-  final isLoading = false.obs;
 
   @override
   void onInit() {
     super.onInit();
+    
+    // Initialize video player
     player = Player();
     videoController = VideoController(player);
+    
+    // Initialize audio player
+    audioPlayer = ja.AudioPlayer();
 
-    // Listen to player state
+    // Listen to video player streams
     player.stream.playing.listen((playing) {
-      isPlaying.value = playing;
+      if (isVideo.value) {
+        isPlaying.value = playing;
+      }
     });
 
     player.stream.duration.listen((d) {
-      duration.value = d;
+      if (isVideo.value) {
+        duration.value = d;
+      }
     });
 
     player.stream.position.listen((p) {
-      position.value = p;
+      if (isVideo.value) {
+        position.value = p;
+      }
     });
 
     player.stream.buffering.listen((buffering) {
-      isLoading.value = buffering;
+      if (isVideo.value) {
+        isLoading.value = buffering;
+      }
+    });
+    
+    player.stream.error.listen((error) {
+      print('Player error: $error');
+    });
+    
+    // Listen to audio player streams
+    audioPlayer.playingStream.listen((playing) {
+      if (!isVideo.value) {
+        isPlaying.value = playing;
+      }
+    });
+    
+    audioPlayer.durationStream.listen((d) {
+      if (!isVideo.value && d != null) {
+        duration.value = d;
+      }
+    });
+    
+    audioPlayer.positionStream.listen((p) {
+      if (!isVideo.value) {
+        position.value = p;
+      }
+    });
+    
+    audioPlayer.processingStateStream.listen((state) {
+      if (!isVideo.value) {
+        isLoading.value = state == ja.ProcessingState.loading || state == ja.ProcessingState.buffering;
+      }
+    });
+    
+    audioPlayer.playerStateStream.listen((state) {
+      print('Audio player state: ${state.playing}');
     });
   }
 
@@ -53,23 +102,22 @@ class MediaSwitchController extends GetxController {
       currentThumbnail.value = thumbnail;
       currentAudioUrl.value = audio;
       currentVideoUrl.value = video;
-      isVideo.value = false; // Default to audio mode
+      isVideo.value = false;
 
-      print('Loading media: $audio');
+      print('Loading audio: $audio');
 
-      // Load and play the audio
-      await player.open(Media(audio), play: true);
+      // Use just_audio for audio (Windows compatible!)
+      await audioPlayer.setVolume(1.0); // Full volume
+      await audioPlayer.setUrl(audio);
+      await audioPlayer.play();
       
-      print('Media loaded successfully');
+      print('Audio loaded and playing at full volume');
     } catch (e) {
-      print('Error loading media: $e');
+      print('Error loading audio: $e');
       Get.snackbar(
-        'Playback Error',
-        'Failed to play media. Please try again.',
+        'Error',
+        'Failed to load audio',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.8),
-        colorText: Colors.white,
-        duration: const Duration(seconds: 3),
       );
     }
   }
@@ -78,7 +126,6 @@ class MediaSwitchController extends GetxController {
     if (currentVideoUrl.value.isNotEmpty) {
       isVideo.value = true;
       final currentPos = position.value;
-      await player.pause();
       await player.open(Media(currentVideoUrl.value), play: false);
       if (currentPos.inSeconds > 0) {
         await player.seek(currentPos);
@@ -91,7 +138,6 @@ class MediaSwitchController extends GetxController {
     if (currentAudioUrl.value.isNotEmpty) {
       isVideo.value = false;
       final currentPos = position.value;
-      await player.pause();
       await player.open(Media(currentAudioUrl.value), play: false);
       if (currentPos.inSeconds > 0) {
         await player.seek(currentPos);
@@ -99,21 +145,34 @@ class MediaSwitchController extends GetxController {
       await player.play();
     }
   }
-
+  
   Future<void> play() async {
-    await player.play();
+    if (isVideo.value) {
+      await player.play();
+    } else {
+      await audioPlayer.play();
+    }
   }
-
+  
   Future<void> pause() async {
-    await player.pause();
+    if (isVideo.value) {
+      await player.pause();
+    } else {
+      await audioPlayer.pause();
+    }
   }
-
+  
   Future<void> seek(Duration position) async {
-    await player.seek(position);
+    if (isVideo.value) {
+      await player.seek(position);
+    } else {
+      await audioPlayer.seek(position);
+    }
   }
-
+  
   Future<void> stop() async {
     await player.stop();
+    await audioPlayer.stop();
     currentTitle.value = '';
     currentThumbnail.value = '';
     currentAudioUrl.value = '';
@@ -123,6 +182,7 @@ class MediaSwitchController extends GetxController {
   @override
   void onClose() {
     player.dispose();
+    audioPlayer.dispose();
     super.onClose();
   }
 }

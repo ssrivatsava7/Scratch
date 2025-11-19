@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:media_kit/media_kit.dart';
 
 import '../../utils/controller_helper.dart';
 import '../../widgets/dopamine_app_bar.dart';
@@ -13,6 +17,13 @@ class AudioPlayerScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final media = Controllers.mediaSwitch;
     final args = Get.arguments as Map<String, dynamic>?;
+
+    // Initialize audio playback when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (args != null) {
+        _initializeAudio(args);
+      }
+    });
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -358,5 +369,97 @@ class AudioPlayerScreen extends StatelessWidget {
     final minutes = twoDigits(duration.inMinutes.remainder(60));
     final seconds = twoDigits(duration.inSeconds.remainder(60));
     return '$minutes:$seconds';
+  }
+
+  void _initializeAudio(Map<String, dynamic> item) async {
+    var videoId = item['id'] ?? item['videoId'] ?? '';
+    final title = item['title'] ?? 'Unknown';
+    final thumbnail = item['thumbnail'] ?? item['thumbnails']?[0]?['url'] ?? '';
+    
+    // Extract video ID from URL if it's a full URL
+    if (videoId.contains('youtube.com/watch?v=')) {
+      videoId = videoId.split('v=')[1].split('&')[0];
+    } else if (videoId.contains('youtu.be/')) {
+      videoId = videoId.split('youtu.be/')[1].split('?')[0];
+    }
+    
+    if (videoId.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Invalid media item',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    print('=== AUDIO PLAYER: INITIALIZING AUDIO ===');
+    print('Video ID (cleaned): $videoId');
+    print('Title: $title');
+
+    // Update media controller with current info
+    Controllers.mediaSwitch.currentTitle.value = title;
+    Controllers.mediaSwitch.currentThumbnail.value = thumbnail;
+    Controllers.mediaSwitch.isVideo.value = false;
+
+    // Show loading
+    Get.dialog(
+      const Center(
+        child: CircularProgressIndicator(color: Colors.purpleAccent),
+      ),
+      barrierDismissible: false,
+    );
+
+    try {
+      // Get video/audio streams
+      final yt = YoutubeExplode();
+      final manifest = await yt.videos.streamsClient.getManifest(videoId);
+      
+      // Get audio stream - prefer MP4 for Windows compatibility
+      final audioStream = manifest.audioOnly.where((stream) => stream.container.name == 'mp4').isNotEmpty
+          ? manifest.audioOnly.where((stream) => stream.container.name == 'mp4').withHighestBitrate()
+          : manifest.audioOnly.withHighestBitrate();
+      
+      final audioUrl = audioStream.url.toString();
+      
+      // Get video stream for potential switching
+      final videoStream = manifest.muxed.withHighestBitrate();
+      final videoUrl = videoStream.url.toString();
+      
+      print('Audio URL: ${audioUrl.substring(0, 100)}...');
+      print('Audio format: ${audioStream.container.name}');
+      
+      yt.close();
+      
+      // Close loading dialog
+      Get.back();
+
+      // Load media using the controller
+      await Controllers.mediaSwitch.loadMedia(
+        title: title,
+        thumbnail: thumbnail,
+        audio: audioUrl,
+        video: videoUrl,
+      );
+      
+      print('=== AUDIO INITIALIZED SUCCESSFULLY ===');
+      
+    } catch (e, stackTrace) {
+      if (Get.isDialogOpen ?? false) {
+        Get.back();
+      }
+      
+      print('AUDIO PLAYER: Error: $e');
+      print('Stack trace: $stackTrace');
+      Get.snackbar(
+        'Playback Error',
+        'Failed to play audio',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+    }
   }
 }
