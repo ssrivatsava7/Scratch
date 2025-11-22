@@ -24,7 +24,7 @@ class MediaSwitchController extends GetxController {
   
   final currentAudioUrl = ''.obs;
   final currentVideoUrl = ''.obs;
-  final currentVideoQuality = '1080p'.obs; // Default to 1080p
+  final currentVideoQuality = '720p'.obs; // Default to 720p (max for muxed streams)
   final availableQualities = <String>[].obs;
 
   @override
@@ -57,8 +57,11 @@ class MediaSwitchController extends GetxController {
   void _setupVideoListeners() {
     videoPlayer.stream.playing.listen((playing) {
       if (isVideo.value) {
+        // Update playing state based on video player
         isPlaying.value = playing;
-        if (playing) print('▶️ Video playing');
+        if (playing) {
+          print('▶️ Video playing');
+        }
       }
     });
 
@@ -98,6 +101,7 @@ class MediaSwitchController extends GetxController {
     // Playing state
     audioPlayer.playingStream.listen((playing) {
       if (!isVideo.value) {
+        // Only update playing state in audio-only mode
         isPlaying.value = playing;
         print('🎵 Audio ${playing ? "playing" : "paused"}');
       }
@@ -216,15 +220,15 @@ class MediaSwitchController extends GetxController {
       currentArtist.value = artist ?? '';
       currentAudioUrl.value = audio;
       currentVideoUrl.value = video;
-      availableQualities.value = qualities ?? ['1080p', '720p', '480p', '360p'];
+      availableQualities.value = qualities ?? ['720p', '480p', '360p', '240p'];
       
       // Set quality (use provided initialQuality or determine from available)
       if (initialQuality != null && initialQuality.isNotEmpty) {
         currentVideoQuality.value = initialQuality;
       } else if (qualities != null && qualities.isNotEmpty) {
-        // Default to 1080p if available, otherwise use highest available
-        if (qualities.any((q) => q.contains('1080'))) {
-          currentVideoQuality.value = qualities.firstWhere((q) => q.contains('1080'));
+        // Default to 720p if available, otherwise use highest available
+        if (qualities.any((q) => q.contains('720'))) {
+          currentVideoQuality.value = qualities.firstWhere((q) => q.contains('720'));
         } else {
           currentVideoQuality.value = qualities.first;
         }
@@ -292,7 +296,7 @@ class MediaSwitchController extends GetxController {
     }
   }
 
-  /// Switch to video mode with proper quality
+  /// Switch to video mode with muxed stream (reliable playback)
   Future<void> switchToVideo({String? quality}) async {
     if (currentVideoUrl.value.isEmpty) {
       Get.snackbar('Error', 'No video URL available',
@@ -304,7 +308,6 @@ class MediaSwitchController extends GetxController {
       print('🎬 Switching to video mode...');
       print('Current video quality: ${currentVideoQuality.value}');
       print('Video URL: ${currentVideoUrl.value.substring(0, 100)}...');
-      print('Audio URL: ${currentAudioUrl.value.substring(0, 100)}...');
       
       // Save current position BEFORE changing mode
       final currentPos = position.value;
@@ -319,83 +322,37 @@ class MediaSwitchController extends GetxController {
       
       print('⏳ Loading video player at quality ${currentVideoQuality.value}...');
       
-      // For high-quality video-only streams (1080p+), we need to handle audio separately
-      // Since MediaKit doesn't natively support combining separate audio/video streams,
-      // we'll let the video player handle the video and continue using just_audio for audio
-      final qualityHeight = int.tryParse(
-        currentVideoQuality.value
-          .replaceAll('p', '')
-          .replaceAll(' (4K)', '')
-          .replaceAll(' (2K)', '')
-      ) ?? 720;
+      // WORKAROUND: Using muxed streams only (max 720p) for reliable playback
+      // Muxed streams contain both audio and video in a single stream
+      print('📺 Using muxed stream (video+audio together) for reliable playback');
+      print('🎯 Target quality: ${currentVideoQuality.value}');
       
-      if (qualityHeight >= 1080 && currentAudioUrl.value.isNotEmpty) {
-        print('🎵 High-quality mode: Using video player for video + just_audio for audio');
-        print('🎯 Target quality: ${currentVideoQuality.value} (${qualityHeight}p)');
-        
-        // Stop any existing video playback
-        await videoPlayer.stop();
-        
-        // Load video without audio
-        print('📹 Opening video stream...');
-        await videoPlayer.open(Media(currentVideoUrl.value), play: false);
-        
-        // Wait for video to be ready
-        await Future.delayed(const Duration(milliseconds: 800));
-        print('📺 Video loaded - Width: ${videoPlayer.state.width}, Height: ${videoPlayer.state.height}');
-        
-        // Reload audio separately for synchronization
-        print('🎵 Loading audio stream for sync...');
-        await audioPlayer.setUrl(currentAudioUrl.value);
-        
-        // Seek both to the saved position
-        if (currentPos.inSeconds > 0) {
-          print('⏩ Seeking both to ${currentPos.inSeconds}s');
-          await videoPlayer.seek(currentPos);
-          await audioPlayer.seek(currentPos);
-        }
-        
-        // Wait a bit for seeks to complete
-        await Future.delayed(const Duration(milliseconds: 200));
-        
-        // Start both simultaneously
-        print('▶️ Starting synchronized playback...');
-        await videoPlayer.play();
-        await audioPlayer.play();
-        
-        print('✅ Switched to synchronized high-quality video mode');
-        print('✅ Actual video resolution: ${videoPlayer.state.width}x${videoPlayer.state.height}');
-      } else {
-        print('📺 Standard quality mode: Using muxed stream (video+audio together)');
-        print('🎯 Target quality: ${currentVideoQuality.value}');
-        
-        // Stop any existing video playback
-        await videoPlayer.stop();
-        
-        // For lower qualities or muxed streams, just use the video player
-        print('📹 Opening muxed stream...');
-        await videoPlayer.open(Media(currentVideoUrl.value), play: false);
-        
-        // Wait for video to be ready
-        await Future.delayed(const Duration(milliseconds: 800));
-        print('📺 Video loaded - Width: ${videoPlayer.state.width}, Height: ${videoPlayer.state.height}');
-        
-        // Seek to saved position
-        if (currentPos.inSeconds > 0) {
-          print('⏩ Seeking to ${currentPos.inSeconds}s');
-          await videoPlayer.seek(currentPos);
-        }
-        
-        // Wait for seek to complete
-        await Future.delayed(const Duration(milliseconds: 200));
-        
-        // Start video playback
-        print('▶️ Starting video playback...');
-        await videoPlayer.play();
+      // Stop any existing video playback
+      await videoPlayer.stop();
+      
+      // Load muxed stream
+      print('📹 Opening muxed stream...');
+      await videoPlayer.open(Media(currentVideoUrl.value), play: false);
+      
+      // Wait for video to be ready
+      await Future.delayed(const Duration(milliseconds: 800));
+      print('📺 Video loaded - Width: ${videoPlayer.state.width}, Height: ${videoPlayer.state.height}');
+      
+      // Seek to saved position
+      if (currentPos.inSeconds > 0) {
+        print('⏩ Seeking to ${currentPos.inSeconds}s');
+        await videoPlayer.seek(currentPos);
+      }
+      
+      // Wait for seek to complete
+      await Future.delayed(const Duration(milliseconds: 200));
+      
+      // Start video playback
+      print('▶️ Starting video playback...');
+      await videoPlayer.play();
         
         print('✅ Switched to video mode with embedded audio');
         print('✅ Actual video resolution: ${videoPlayer.state.width}x${videoPlayer.state.height}');
-      }
       
       isLoading.value = false;
       
@@ -468,7 +425,7 @@ class MediaSwitchController extends GetxController {
     }
   }
 
-  /// Change video quality with proper error handling
+  /// Change video quality with proper error handling (muxed streams)
   Future<void> changeVideoQuality(String quality, String newVideoUrl) async {
     try {
       print('🎬 Changing video quality to: $quality');
@@ -481,14 +438,6 @@ class MediaSwitchController extends GetxController {
       currentVideoQuality.value = quality;
       currentVideoUrl.value = newVideoUrl;
       
-      // Check if this is a high-quality video-only stream
-      final qualityHeight = int.tryParse(
-        quality
-          .replaceAll('p', '')
-          .replaceAll(' (4K)', '')
-          .replaceAll(' (2K)', '')
-      ) ?? 720;
-      
       // Only switch if currently in video mode
       if (isVideo.value) {
         isLoading.value = true;
@@ -496,36 +445,14 @@ class MediaSwitchController extends GetxController {
         print('⏸️ Pausing current video...');
         await videoPlayer.pause();
         
-        print('⏳ Loading new quality stream...');
+        print('⏳ Loading new quality stream (muxed)...');
         await videoPlayer.open(Media(newVideoUrl), play: false);
         
-        if (qualityHeight >= 1080 && currentAudioUrl.value.isNotEmpty) {
-          print('🎵 High-quality mode: Syncing audio position...');
-          // Ensure audio is ready for sync
-          if (audioPlayer.processingState != ja.ProcessingState.ready || audioPlayer.duration == null) {
-            await audioPlayer.setUrl(currentAudioUrl.value);
-          }
-          
-          // Seek both to the same position
-          print('⏩ Seeking to position: ${currentPos.inSeconds}s');
-          await Future.wait([
-            videoPlayer.seek(currentPos),
-            audioPlayer.seek(currentPos),
-          ]);
-          
-          print('▶️ Resuming synchronized playback...');
-          await Future.wait([
-            videoPlayer.play(),
-            audioPlayer.play(),
-          ]);
-        } else {
-          print('📺 Standard quality mode: Using embedded audio');
-          print('⏩ Seeking to position: ${currentPos.inSeconds}s');
-          await videoPlayer.seek(currentPos);
-          
-          print('▶️ Resuming playback...');
-          await videoPlayer.play();
-        }
+        print('⏩ Seeking to position: ${currentPos.inSeconds}s');
+        await videoPlayer.seek(currentPos);
+        
+        print('▶️ Resuming playback...');
+        await videoPlayer.play();
         
         isLoading.value = false;
         
@@ -557,28 +484,52 @@ class MediaSwitchController extends GetxController {
     }
   }
 
-  // Playback controls
+  // Playback controls (simplified for muxed streams)
   Future<void> play() async {
-    if (isVideo.value) {
-      await videoPlayer.play();
-    } else {
-      await audioPlayer.play();
+    try {
+      if (isVideo.value) {
+        // In video mode - play video (contains audio in muxed stream)
+        print('▶️ Playing video');
+        await videoPlayer.play();
+      } else {
+        // Audio-only mode
+        print('▶️ Playing audio');
+        await audioPlayer.play();
+      }
+    } catch (e) {
+      print('❌ Play error: $e');
     }
   }
   
   Future<void> pause() async {
-    if (isVideo.value) {
-      await videoPlayer.pause();
-    } else {
-      await audioPlayer.pause();
+    try {
+      if (isVideo.value) {
+        // In video mode - pause video
+        print('⏸️ Pausing video');
+        await videoPlayer.pause();
+      } else {
+        // Audio-only mode
+        print('⏸️ Pausing audio');
+        await audioPlayer.pause();
+      }
+    } catch (e) {
+      print('❌ Pause error: $e');
     }
   }
   
   Future<void> seek(Duration position) async {
-    if (isVideo.value) {
-      await videoPlayer.seek(position);
-    } else {
-      await audioPlayer.seek(position);
+    try {
+      if (isVideo.value) {
+        // In video mode - seek video
+        print('⏩ Seeking video to ${position.inSeconds}s');
+        await videoPlayer.seek(position);
+      } else {
+        // Audio-only mode
+        print('⏩ Seeking audio to ${position.inSeconds}s');
+        await audioPlayer.seek(position);
+      }
+    } catch (e) {
+      print('❌ Seek error: $e');
     }
   }
   
