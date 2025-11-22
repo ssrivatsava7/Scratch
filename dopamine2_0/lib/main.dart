@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:just_audio/just_audio.dart';
+import 'dart:io' show Platform;
 
 import 'controllers/favorites_controller.dart';
 import 'controllers/playlist_controller.dart';
@@ -19,8 +21,18 @@ void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
 
-    /// Initialize MediaKit
+    /// Initialize MediaKit for video playback
     MediaKit.ensureInitialized();
+    
+    /// Initialize just_audio (ensures Windows audio backend is ready)
+    if (Platform.isWindows) {
+      print('Initializing Windows audio backend...');
+      // Pre-initialize audio player to ensure Windows audio session is ready
+      final testPlayer = AudioPlayer();
+      await testPlayer.setVolume(1.0);
+      await testPlayer.dispose();
+      print('Windows audio backend initialized');
+    }
     
     /// Initialize GetStorage
     await GetStorage.init();

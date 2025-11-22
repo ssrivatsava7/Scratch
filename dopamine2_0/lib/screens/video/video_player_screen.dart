@@ -54,6 +54,40 @@ class VideoPlayerScreen extends StatelessWidget {
                       tooltip: 'Home',
                     ),
                     const Spacer(),
+                    // Quality selector button
+                    Obx(() => IconButton(
+                      icon: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          const Icon(Icons.settings, color: Colors.white, size: 24),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: Colors.purpleAccent,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                media.currentVideoQuality.value.replaceAll('p', '').replaceAll(' (4K)', '').replaceAll(' (2K)', ''),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      onPressed: () {
+                        if (args != null) {
+                          _showQualitySelector(args);
+                        }
+                      },
+                      tooltip: 'Video Quality (${media.currentVideoQuality.value})',
+                    )),
                     // Favorite button
                     IconButton(
                       icon: Icon(
@@ -237,6 +271,240 @@ class VideoPlayerScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _showQualitySelector(Map<String, dynamic> args) async {
+    final videoId = args['id'] ?? args['videoId'] ?? '';
+    if (videoId.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Video ID not available',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    final media = Controllers.mediaSwitch;
+    final search = Controllers.search;
+
+    // Fetch available qualities
+    Get.dialog(
+      const Center(child: CircularProgressIndicator()),
+      barrierDismissible: false,
+    );
+
+    try {
+      final qualities = await search.getAvailableQualities(videoId);
+      Get.back(); // Close loading
+
+      // Show quality selector dialog
+      Get.dialog(
+        Dialog(
+          backgroundColor: Colors.grey[900],
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Title
+                const Row(
+                  children: [
+                    Icon(Icons.high_quality, color: Colors.purpleAccent),
+                    SizedBox(width: 12),
+                    Text(
+                      'Video Quality',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                
+                // Quality options list
+                SizedBox(
+                  width: double.maxFinite,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: qualities.map((quality) {
+                        final currentQuality = media.currentVideoQuality.value;
+                        final isSelected = quality == currentQuality;
+                        
+                        // Determine quality badge color
+                        Color badgeColor = Colors.grey;
+                        String badgeText = '';
+                        
+                        if (quality.contains('2160') || quality.contains('4K')) {
+                          badgeColor = Colors.red;
+                          badgeText = '4K ULTRA HD';
+                        } else if (quality.contains('1440') || quality.contains('2K')) {
+                          badgeColor = Colors.deepOrange;
+                          badgeText = '2K QHD';
+                        } else if (quality.contains('1080')) {
+                          badgeColor = Colors.blue;
+                          badgeText = 'FULL HD';
+                        } else if (quality.contains('720')) {
+                          badgeColor = Colors.green;
+                          badgeText = 'HD';
+                        } else if (quality.contains('480')) {
+                          badgeText = 'SD';
+                        }
+                        
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected ? Colors.purpleAccent.withOpacity(0.2) : Colors.grey[850],
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isSelected ? Colors.purpleAccent : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
+                          child: ListTile(
+                            leading: Icon(
+                              isSelected ? Icons.check_circle : Icons.circle_outlined,
+                              color: isSelected ? Colors.purpleAccent : Colors.white70,
+                              size: 28,
+                            ),
+                            title: Row(
+                              children: [
+                                Text(
+                                  quality,
+                                  style: TextStyle(
+                                    color: isSelected ? Colors.white : Colors.white70,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                                if (badgeText.isNotEmpty) ...[
+                                  const SizedBox(width: 12),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: badgeColor,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      badgeText,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            subtitle: Text(
+                              isSelected ? 'Currently playing' : 'Tap to switch',
+                              style: TextStyle(
+                                color: isSelected ? Colors.purpleAccent.withOpacity(0.8) : Colors.white54,
+                                fontSize: 12,
+                              ),
+                            ),
+                            onTap: () async {
+                              if (!isSelected) {
+                                Get.back(); // Close quality dialog
+                                
+                                // Show loading
+                                Get.dialog(
+                                  const Center(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        CircularProgressIndicator(color: Colors.purpleAccent),
+                                        SizedBox(height: 16),
+                                        Text(
+                                          'Switching quality...',
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  barrierDismissible: false,
+                                );
+                                
+                                try {
+                                  // Fetch new stream URL for selected quality
+                                  final streams = await search.getStreamUrls(
+                                    videoId,
+                                    videoQuality: quality,
+                                  );
+                                  
+                                  Get.back(); // Close loading
+                                  
+                                  if (streams['videoUrl'] != null) {
+                                    // Update quality
+                                    await media.changeVideoQuality(
+                                      quality,
+                                      streams['videoUrl']!,
+                                    );
+                                    
+                                    Get.snackbar(
+                                      'Quality Changed',
+                                      'Now playing at $quality',
+                                      snackPosition: SnackPosition.TOP,
+                                      backgroundColor: Colors.green.withOpacity(0.8),
+                                      colorText: Colors.white,
+                                      duration: const Duration(seconds: 2),
+                                    );
+                                  } else {
+                                    Get.snackbar(
+                                      'Error',
+                                      'Failed to load $quality stream',
+                                      snackPosition: SnackPosition.BOTTOM,
+                                      backgroundColor: Colors.red,
+                                      colorText: Colors.white,
+                                    );
+                                  }
+                                } catch (e) {
+                                  Get.back(); // Close loading
+                                  Get.snackbar(
+                                    'Error',
+                                    'Failed to change quality: $e',
+                                    snackPosition: SnackPosition.BOTTOM,
+                                    backgroundColor: Colors.red,
+                                    colorText: Colors.white,
+                                  );
+                                }
+                              }
+                            },
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Close button
+                TextButton(
+                  onPressed: () => Get.back(),
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(color: Colors.white54, fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      Get.back(); // Close loading
+      Get.snackbar(
+        'Error',
+        'Failed to fetch available qualities: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
   }
 
   void _showAddToPlaylistDialog(Map<String, dynamic> item) {
