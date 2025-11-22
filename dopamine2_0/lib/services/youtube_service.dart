@@ -114,19 +114,29 @@ class YouTubeService {
     }
   }
 
-  // Get available video qualities (WORKAROUND: Max 720p for reliable muxed streams)
-  // Note: This is a temporary workaround. Only muxed stream qualities are shown (up to 720p).
-  // TODO: Update when dedicated YouTube player is integrated to show 1080p+ options.
+  // Get available video qualities (supports up to 4K with YouTube player)
+  // Note: Muxed streams max out at 720p, but video-only streams go up to 4K
+  // The app will automatically use YouTube iframe player for 1080p+ and MediaKit for 720p and below
   static Future<List<String>> getAvailableQualities(String videoId) async {
     try {
       final manifest = await _yt.videos.streamsClient.getManifest(videoId);
       final qualities = <String>{};
       
-      // Get qualities from muxed streams only (reliable playback, usually up to 720p)
+      // Get qualities from muxed streams (up to 720p)
       for (final stream in manifest.muxed) {
+        qualities.add('${stream.videoResolution.height}p');
+      }
+      
+      // Get qualities from video-only streams (includes 1080p, 1440p, 2160p/4K, etc.)
+      // These will use YouTube iframe player for reliable playback
+      for (final stream in manifest.videoOnly) {
         final height = stream.videoResolution.height;
-        // Only add qualities up to 720p
-        if (height <= 720) {
+        // Add quality label with special naming for 4K
+        if (height >= 2160) {
+          qualities.add('2160p (4K)');
+        } else if (height >= 1440) {
+          qualities.add('1440p (2K)');
+        } else {
           qualities.add('${height}p');
         }
       }
@@ -134,19 +144,18 @@ class YouTubeService {
       // Sort by height (descending order - highest quality first)
       final sortedQualities = qualities.toList();
       sortedQualities.sort((a, b) {
-        final aHeight = int.tryParse(a.replaceAll('p', '')) ?? 0;
-        final bHeight = int.tryParse(b.replaceAll('p', '')) ?? 0;
+        final aHeight = int.tryParse(a.replaceAll('p', '').replaceAll(' (4K)', '').replaceAll(' (2K)', '')) ?? 0;
+        final bHeight = int.tryParse(b.replaceAll('p', '').replaceAll(' (4K)', '').replaceAll(' (2K)', '')) ?? 0;
         return bHeight.compareTo(aHeight); // Descending order
       });
       
-      print('📊 Available qualities (muxed streams): $sortedQualities');
-      print('ℹ️  Max 720p due to muxed-stream-only workaround for reliable playback');
+      print('📊 Available qualities: $sortedQualities');
+      print('ℹ️  1080p+ will use YouTube iframe player, 720p and below will use muxed streams');
       
-      // Return muxed qualities, or default fallback up to 720p
-      return sortedQualities.isNotEmpty ? sortedQualities : ['720p', '480p', '360p', '240p'];
+      return sortedQualities;
     } catch (e) {
       print('❌ Error getting qualities: $e');
-      return ['720p', '480p', '360p', '240p']; // Updated default fallback (max 720p)
+      return ['1080p', '720p', '480p', '360p']; // Default fallback with 1080p
     }
   }
 
