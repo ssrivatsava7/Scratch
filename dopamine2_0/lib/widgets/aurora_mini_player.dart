@@ -17,6 +17,12 @@ class AuroraMiniPlayer extends StatelessWidget {
         return const SizedBox.shrink();
       }
 
+      // Hide mini player on player screens
+      final currentRoute = Get.currentRoute;
+      if (currentRoute == Routes.AUDIO_PLAYER || currentRoute == Routes.VIDEO_PLAYER) {
+        return const SizedBox.shrink();
+      }
+
       return Positioned(
         left: 0,
         right: 0,

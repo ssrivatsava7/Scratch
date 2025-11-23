@@ -137,72 +137,49 @@ class VideoQualitySelector extends StatelessWidget {
                             ),
                           ),
                           onTap: () async {
-                            if (!isSelected) {
-                              Get.back();
-                              
-                              // Show loading
-                              Get.dialog(
-                                const Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      CircularProgressIndicator(color: Colors.purpleAccent),
-                                      SizedBox(height: 16),
-                                      Text(
-                                        'Switching quality...',
-                                        style: TextStyle(color: Colors.white),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                barrierDismissible: false,
-                              );
-                              
-                              try {
-                                // Fetch new stream URL for selected quality
-                                final streams = await search.getStreamUrls(
-                                  videoId,
-                                  videoQuality: quality,
+                              if (!isSelected) {
+                                Get.back(); // Close quality dialog immediately
+                                
+                                // Show non-blocking feedback
+                                Get.snackbar(
+                                  'Switching Quality',
+                                  'Switching to $quality...',
+                                  snackPosition: SnackPosition.TOP,
+                                  backgroundColor: Colors.black54,
+                                  colorText: Colors.white,
+                                  duration: const Duration(seconds: 1),
                                 );
                                 
-                                Get.back(); // Close loading
-                                
-                                if (streams['videoUrl'] != null) {
-                                  // Update quality
-                                  await media.changeVideoQuality(
-                                    quality,
-                                    streams['videoUrl']!,
-                                  );
-                                  onQualitySelected(quality);
-                                  
-                                  Get.snackbar(
-                                    'Quality Changed',
-                                    'Now playing at $quality',
-                                    snackPosition: SnackPosition.TOP,
-                                    backgroundColor: Colors.green.withOpacity(0.8),
-                                    colorText: Colors.white,
-                                    duration: const Duration(seconds: 2),
-                                  );
-                                } else {
+                                // Perform switch in background
+                                search.getStreamUrls(
+                                  videoId,
+                                  videoQuality: quality,
+                                ).then((streams) async {
+                                  if (streams['videoUrl'] != null) {
+                                    await media.changeVideoQuality(
+                                      quality,
+                                      streams['videoUrl']!,
+                                    );
+                                    onQualitySelected(quality);
+                                  } else {
+                                    Get.snackbar(
+                                      'Error',
+                                      'Failed to load $quality stream',
+                                      snackPosition: SnackPosition.BOTTOM,
+                                      backgroundColor: Colors.red,
+                                      colorText: Colors.white,
+                                    );
+                                  }
+                                }).catchError((e) {
                                   Get.snackbar(
                                     'Error',
-                                    'Failed to load $quality stream',
+                                    'Failed to change quality: $e',
                                     snackPosition: SnackPosition.BOTTOM,
                                     backgroundColor: Colors.red,
                                     colorText: Colors.white,
                                   );
-                                }
-                              } catch (e) {
-                                Get.back(); // Close loading
-                                Get.snackbar(
-                                  'Error',
-                                  'Failed to change quality: $e',
-                                  snackPosition: SnackPosition.BOTTOM,
-                                  backgroundColor: Colors.red,
-                                  colorText: Colors.white,
-                                );
+                                });
                               }
-                            }
                           },
                         ),
                       );

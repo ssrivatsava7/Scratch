@@ -3,6 +3,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:just_audio/just_audio.dart' as ja;
 import 'package:flutter/material.dart';
+import '../services/youtube_service.dart';
 
 /// Robust Media Switch Controller with resolution selection
 /// Inspired by YTDLnis's approach to handling multiple formats and fallbacks
@@ -195,6 +196,63 @@ class MediaSwitchController extends GetxController {
     }
   }
 
+  /// Load media directly from ID (Instant Playback)
+  Future<void> loadMediaFromId({
+    required String videoId,
+    required String title,
+    required String thumbnail,
+    required String author,
+    bool isVideoMode = false,
+  }) async {
+    // 1. Update UI immediately
+    currentTitle.value = title;
+    currentThumbnail.value = thumbnail;
+    currentArtist.value = author;
+    isLoading.value = true;
+    
+    // Reset state
+    isVideo.value = false;
+    currentAudioUrl.value = '';
+    currentVideoUrl.value = '';
+    availableQualities.clear();
+    
+    // Stop previous playback
+    await audioPlayer.stop();
+    await videoPlayer.stop();
+    
+    try {
+      // 2. Fetch streams in background
+      print('🚀 Fetching streams for instant playback...');
+      final streams = await YouTubeService.getStreamUrls(videoId);
+      final qualities = await YouTubeService.getAvailableQualities(videoId);
+      
+      final audioUrl = streams['audioUrl'];
+      final videoUrl = streams['videoUrl'];
+      
+      if (audioUrl == null) throw Exception("No audio stream found");
+      
+      // 3. Load the actual media
+      // 3. Load the actual media
+      await loadMedia(
+        title: title,
+        thumbnail: thumbnail,
+        audio: audioUrl,
+        video: videoUrl ?? audioUrl,
+        artist: author,
+        qualities: qualities,
+        autoPlay: !isVideoMode,
+        startInVideo: isVideoMode,
+      );
+      
+      // switchToVideo is now handled inside loadMedia if startInVideo is true
+      
+    } catch (e) {
+      print('❌ Error in instant load: $e');
+      isLoading.value = false;
+      Get.snackbar('Error', 'Failed to load media: $e');
+    }
+  }
+
   /// Load media with quality selection
   Future<void> loadMedia({
     required String title,
@@ -204,6 +262,8 @@ class MediaSwitchController extends GetxController {
     List<String>? qualities,
     String? artist,
     String? initialQuality,
+    bool autoPlay = true,
+    bool startInVideo = false,
   }) async {
     try {
       print('🎵 ========== LOADING MEDIA ==========');
@@ -213,6 +273,7 @@ class MediaSwitchController extends GetxController {
       print('Video URL: ${video.substring(0, 50)}...');
       print('Available Qualities: ${qualities ?? []}');
       print('Initial Quality: ${initialQuality ?? "auto"}');
+      print('Start in Video: $startInVideo');
       
       // Update metadata
       currentTitle.value = title;
@@ -235,13 +296,24 @@ class MediaSwitchController extends GetxController {
       }
       
       print('🎬 Set video quality to: ${currentVideoQuality.value}');
-      
-      isVideo.value = false; // Start with audio mode
-      
-      // Stop any existing playback
-      await audioPlayer.stop();
+
+      // Stop any existing playback first
+      try {
+        await audioPlayer.stop();
+      } catch (e) {
+        print('⚠️ Error stopping audio: $e');
+      }
       await videoPlayer.stop();
       
+      // If starting in video mode, skip audio loading entirely
+      if (startInVideo) {
+        print('🎬 Starting directly in video mode...');
+        isVideo.value = true;
+        await switchToVideo(force: true);
+        return;
+      }
+      
+      isVideo.value = false; // Start with audio mode
       isLoading.value = true;
 
       // Load audio using just_audio (better Windows support)
@@ -251,12 +323,15 @@ class MediaSwitchController extends GetxController {
       final audioDuration = await audioPlayer.setUrl(audio);
       print('✅ Audio loaded! Duration: ${audioDuration?.inSeconds ?? 0}s');
       
-      // Start playback
-      print('▶️ Starting playback...');
-      await audioPlayer.play();
+      // Start playback only if autoPlay is true
+      if (autoPlay) {
+        print('▶️ Starting playback...');
+        await audioPlayer.play();
+      } else {
+        print('⏸️ Auto-play disabled (waiting for video switch or user action)');
+      }
       
       // Verify playback started
-      await Future.delayed(const Duration(milliseconds: 500));
       print('🎮 Playback state:');
       print('   - Playing: ${audioPlayer.playing}');
       print('   - Volume: ${audioPlayer.volume}');
@@ -297,10 +372,16 @@ class MediaSwitchController extends GetxController {
   }
 
   /// Switch to video mode with muxed stream (reliable playback)
-  Future<void> switchToVideo({String? quality}) async {
+  Future<void> switchToVideo({String? quality, bool force = false}) async {
     if (currentVideoUrl.value.isEmpty) {
       Get.snackbar('Error', 'No video URL available',
         snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+
+    // Prevent re-entry if already loading
+    if (isLoading.value && !force) {
+      print('⚠️ Already loading/switching, ignoring request');
       return;
     }
     
@@ -314,7 +395,11 @@ class MediaSwitchController extends GetxController {
       
       // Stop audio player completely to avoid interference
       print('⏸️ Stopping audio player...');
-      await audioPlayer.stop();
+      try {
+        await audioPlayer.stop();
+      } catch (e) {
+        print('⚠️ Error stopping audio: $e');
+      }
       
       // Set video mode
       isVideo.value = true;
@@ -334,8 +419,13 @@ class MediaSwitchController extends GetxController {
       print('📹 Opening muxed stream...');
       await videoPlayer.open(Media(currentVideoUrl.value), play: false);
       
-      // Wait for video to be ready
-      await Future.delayed(const Duration(milliseconds: 800));
+      // Wait for video to be ready (safer than fixed delay)
+      // Check if width/height are available, if not wait a bit
+      int retries = 0;
+      while ((videoPlayer.state.width == null || videoPlayer.state.width == 0) && retries < 10) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        retries++;
+      }
       print('📺 Video loaded - Width: ${videoPlayer.state.width}, Height: ${videoPlayer.state.height}');
       
       // Seek to saved position
@@ -345,7 +435,7 @@ class MediaSwitchController extends GetxController {
       }
       
       // Wait for seek to complete
-      await Future.delayed(const Duration(milliseconds: 200));
+      // await Future.delayed(const Duration(milliseconds: 200));
       
       // Start video playback
       print('▶️ Starting video playback...');
@@ -382,10 +472,16 @@ class MediaSwitchController extends GetxController {
   }
 
   /// Switch to audio mode
-  Future<void> switchToAudio() async {
+  Future<void> switchToAudio({bool force = false}) async {
     if (currentAudioUrl.value.isEmpty) {
       Get.snackbar('Error', 'No audio URL available',
         snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+
+    // Prevent re-entry if already loading
+    if (isLoading.value && !force) {
+      print('⚠️ Already loading/switching, ignoring request');
       return;
     }
     
@@ -396,8 +492,12 @@ class MediaSwitchController extends GetxController {
       // Save current position
       final currentPos = position.value;
       
-      // Stop video player
-      await videoPlayer.pause();
+      // Stop video player completely to release resources
+      try {
+        await videoPlayer.stop();
+      } catch (e) {
+        print('⚠️ Error stopping video: $e');
+      }
       
       // Resume/load audio
       isLoading.value = true;
@@ -447,6 +547,13 @@ class MediaSwitchController extends GetxController {
         
         print('⏳ Loading new quality stream (muxed)...');
         await videoPlayer.open(Media(newVideoUrl), play: false);
+        
+        // Wait for video to be ready
+        int retries = 0;
+        while ((videoPlayer.state.width == null || videoPlayer.state.width == 0) && retries < 10) {
+          await Future.delayed(const Duration(milliseconds: 100));
+          retries++;
+        }
         
         print('⏩ Seeking to position: ${currentPos.inSeconds}s');
         await videoPlayer.seek(currentPos);

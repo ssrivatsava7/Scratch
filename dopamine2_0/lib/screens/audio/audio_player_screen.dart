@@ -50,28 +50,31 @@ class AudioPlayerScreen extends StatelessWidget {
             tooltip: 'Test Audio Output',
           ),
           // Favorite button
-          IconButton(
-            icon: Obx(() {
-              if (args == null) return const Icon(Icons.favorite_border);
-              final videoId = args['id'] ?? args['videoId'] ?? '';
-              final isFavorite = Controllers.favorites.favorites.any(
-                (fav) => (fav['id'] == videoId || fav['videoId'] == videoId)
-              );
-              return Icon(
+          Obx(() {
+            final videoId = args != null ? (args['id'] ?? args['videoId'] ?? '') : '';
+            if (videoId.isEmpty) {
+               return IconButton(
+                 icon: const Icon(Icons.favorite_border),
+                 onPressed: () {},
+               );
+            }
+            
+            final isFavorite = Controllers.favorites.favorites.any(
+              (fav) => (fav['id'] == videoId || fav['videoId'] == videoId)
+            );
+            return IconButton(
+              icon: Icon(
                 isFavorite ? Icons.favorite : Icons.favorite_border,
                 color: isFavorite ? Colors.red : null,
-              );
-            }),
-            onPressed: () {
-              if (args != null) {
-                Controllers.favorites.toggleFavorite(args);
-              } else {
-                Get.snackbar('Error', 'No media information available',
-                  snackPosition: SnackPosition.BOTTOM);
-              }
-            },
-            tooltip: 'Toggle Favorite',
-          ),
+              ),
+              onPressed: () {
+                if (args != null) {
+                  Controllers.favorites.toggleFavorite(args);
+                }
+              },
+              tooltip: 'Toggle Favorite',
+            );
+          }),
           // Add to playlist button
           IconButton(
             icon: const Icon(Icons.playlist_add),
@@ -192,7 +195,10 @@ class AudioPlayerScreen extends StatelessWidget {
                       thumbColor: Colors.purpleAccent,
                     ),
                     child: Slider(
-                      value: media.position.value.inSeconds.toDouble(),
+                      value: media.position.value.inSeconds.toDouble().clamp(
+                        0.0, 
+                        media.duration.value.inSeconds > 0 ? media.duration.value.inSeconds.toDouble() : 1.0
+                      ),
                       max: media.duration.value.inSeconds > 0
                           ? media.duration.value.inSeconds.toDouble()
                           : 1.0,
@@ -416,18 +422,18 @@ class AudioPlayerScreen extends StatelessWidget {
     print('Video ID (cleaned): $videoId');
     print('Title: $title');
 
+    // Check if already playing or loading this media
+    if (Controllers.mediaSwitch.currentTitle.value == title && 
+        (Controllers.mediaSwitch.isPlaying.value || Controllers.mediaSwitch.isLoading.value)) {
+      print('Media already loaded/loading. Skipping initialization.');
+      return;
+    }
+
     // Update media controller with current info
     Controllers.mediaSwitch.currentTitle.value = title;
     Controllers.mediaSwitch.currentThumbnail.value = thumbnail;
     Controllers.mediaSwitch.isVideo.value = false;
-
-    // Show loading
-    Get.dialog(
-      const Center(
-        child: CircularProgressIndicator(color: Colors.purpleAccent),
-      ),
-      barrierDismissible: false,
-    );
+    Controllers.mediaSwitch.isLoading.value = true;
 
     try {
       // Get available qualities first
@@ -452,9 +458,6 @@ class AudioPlayerScreen extends StatelessWidget {
       print('Audio URL: ${audioUrl.substring(0, 100)}...');
       print('Video URL: ${videoUrl.substring(0, 100)}...');
       print('Selected quality: $defaultQuality');
-      
-      // Close loading dialog
-      Get.back();
 
       // Load media using the controller with quality information
       await Controllers.mediaSwitch.loadMedia(
@@ -468,14 +471,9 @@ class AudioPlayerScreen extends StatelessWidget {
       );
       
       print('✅ Media loaded with quality: $defaultQuality');
-      
       print('=== AUDIO INITIALIZED SUCCESSFULLY ===');
       
     } catch (e, stackTrace) {
-      if (Get.isDialogOpen ?? false) {
-        Get.back();
-      }
-      
       print('AUDIO PLAYER: Error: $e');
       print('Stack trace: $stackTrace');
       Get.snackbar(
