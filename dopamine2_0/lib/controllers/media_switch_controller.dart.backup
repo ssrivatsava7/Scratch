@@ -1,0 +1,320 @@
+import 'package:get/get.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
+import 'package:just_audio/just_audio.dart' as ja;
+import 'package:flutter/material.dart';
+
+class MediaSwitchController extends GetxController {
+  late final Player player; // For video only
+  late final VideoController videoController;
+  late final ja.AudioPlayer audioPlayer; // For audio only
+
+  final currentTitle = ''.obs;
+  final currentThumbnail = ''.obs;
+  final currentArtist = ''.obs;
+  final isPlaying = false.obs;
+  final isVideo = false.obs;
+  final position = Duration.zero.obs;
+  final duration = Duration.zero.obs;
+  final isLoading = false.obs;
+  
+  final currentAudioUrl = ''.obs;
+  final currentVideoUrl = ''.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    
+    // Initialize video player
+    player = Player();
+    videoController = VideoController(player);
+    
+    // Initialize audio player
+    audioPlayer = ja.AudioPlayer();
+    
+    // Configure Windows audio session for proper audio routing
+    _configureWindowsAudioSession();
+
+    // Listen to video player streams
+    player.stream.playing.listen((playing) {
+      if (isVideo.value) {
+        isPlaying.value = playing;
+      }
+    });
+
+    player.stream.duration.listen((d) {
+      if (isVideo.value) {
+        duration.value = d;
+      }
+    });
+
+    player.stream.position.listen((p) {
+      if (isVideo.value) {
+        position.value = p;
+      }
+    });
+
+    player.stream.buffering.listen((buffering) {
+      if (isVideo.value) {
+        isLoading.value = buffering;
+      }
+    });
+    
+    player.stream.error.listen((error) {
+      print('Player error: $error');
+    });
+    
+    // Listen to audio player streams with detailed logging
+    audioPlayer.playingStream.listen((playing) {
+      if (!isVideo.value) {
+        isPlaying.value = playing;
+        print('🎵 Audio playing state: $playing');
+      }
+    });
+    
+    audioPlayer.durationStream.listen((d) {
+      if (!isVideo.value && d != null) {
+        duration.value = d;
+        print('⏱️ Audio duration: ${d.inSeconds}s');
+      }
+    });
+    
+    audioPlayer.positionStream.listen((p) {
+      if (!isVideo.value) {
+        position.value = p;
+        // Only log occasionally to avoid spam
+        if (p.inSeconds % 5 == 0 && p.inMilliseconds % 1000 < 100) {
+          print('⏩ Audio position: ${p.inSeconds}s / ${duration.value.inSeconds}s');
+        }
+      }
+    });
+    
+    audioPlayer.processingStateStream.listen((state) {
+      if (!isVideo.value) {
+        isLoading.value = state == ja.ProcessingState.loading || state == ja.ProcessingState.buffering;
+        print('⚙️ Audio processing state: $state');
+      }
+    });
+    
+    audioPlayer.playerStateStream.listen((state) {
+      print('🎮 Audio player state - playing: ${state.playing}, processingState: ${state.processingState}');
+    });
+    
+    // Critical: Listen for errors
+    audioPlayer.playbackEventStream.listen(
+      (event) {
+        if (event.processingState == ja.ProcessingState.completed) {
+          print('✅ Audio playback completed');
+        }
+      },
+      onError: (Object e, StackTrace st) {
+        print('❌ Audio playback error: $e');
+        print('Stack trace: $st');
+      },
+    );
+  }
+
+  Future<void> _configureWindowsAudioSession() async {
+    try {
+      // Set audio session configuration for Windows
+      await audioPlayer.setVolume(1.0);
+      
+      // Pre-configure audio session by attempting to set an empty audio source
+      // This ensures Windows recognizes the app as an audio application
+      print('Configuring Windows audio session...');
+      
+      // Force audio session initialization
+      await audioPlayer.setAudioSource(
+        ja.AudioSource.uri(Uri.parse('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3')),
+      ).timeout(
+        const Duration(seconds: 2),
+        onTimeout: () {
+          print('Audio session timeout - this is expected');
+          return null;
+        },
+      ).catchError((e) {
+        print('Audio session initialization: $e');
+        return null;
+      });
+      
+      // Stop and reset after initialization
+      await audioPlayer.stop();
+      print('Windows audio session configured');
+    } catch (e) {
+      print('Audio session configuration error (non-critical): $e');
+    }
+  }
+
+  Future<void> loadMedia({
+    required String title,
+    required String thumbnail,
+    required String audio,
+    required String video,
+  }) async {
+    try {
+      currentTitle.value = title;
+      currentThumbnail.value = thumbnail;
+      currentAudioUrl.value = audio;
+      currentVideoUrl.value = video;
+      isVideo.value = false;
+
+      print('🎵 ========== LOADING AUDIO ==========');
+      print('🎵 Title: $title');
+      print('🎵 Audio URL: $audio');
+      print('🎵 Current volume: ${audioPlayer.volume}');
+
+      // Ensure we're starting fresh
+      await audioPlayer.stop();
+      
+      // Set volume to maximum
+      await audioPlayer.setVolume(1.0);
+      print('🔊 Volume set to: ${audioPlayer.volume}');
+      
+      // Load the audio
+      print('⏳ Setting audio source...');
+      final duration = await audioPlayer.setUrl(audio);
+      print('✅ Audio source loaded! Duration: ${duration?.inSeconds ?? 0}s');
+      
+      // Start playback
+      print('▶️ Starting playback...');
+      await audioPlayer.play();
+      
+      // Verify playback started
+      await Future.delayed(const Duration(milliseconds: 500));
+      print('🎮 Current state:');
+      print('   - Playing: ${audioPlayer.playing}');
+      print('   - Volume: ${audioPlayer.volume}');
+      print('   - Position: ${audioPlayer.position.inSeconds}s');
+      print('   - Duration: ${audioPlayer.duration?.inSeconds ?? 0}s');
+      print('   - Processing: ${audioPlayer.processingState}');
+      print('🎵 ========== AUDIO LOAD COMPLETE ==========');
+      
+    } catch (e, stackTrace) {
+      print('❌ ========== ERROR LOADING AUDIO ==========');
+      print('Error: $e');
+      print('Stack trace: $stackTrace');
+      print('❌ ========================================');
+      Get.snackbar(
+        'Error',
+        'Failed to load audio: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 5),
+      );
+    }
+  }
+
+  Future<void> switchToVideo() async {
+    if (currentVideoUrl.value.isNotEmpty) {
+      isVideo.value = true;
+      final currentPos = position.value;
+      await player.open(Media(currentVideoUrl.value), play: false);
+      if (currentPos.inSeconds > 0) {
+        await player.seek(currentPos);
+      }
+      await player.play();
+    }
+  }
+
+  Future<void> switchToAudio() async {
+    if (currentAudioUrl.value.isNotEmpty) {
+      isVideo.value = false;
+      final currentPos = position.value;
+      await player.open(Media(currentAudioUrl.value), play: false);
+      if (currentPos.inSeconds > 0) {
+        await player.seek(currentPos);
+      }
+      await player.play();
+    }
+  }
+  
+  Future<void> play() async {
+    if (isVideo.value) {
+      await player.play();
+    } else {
+      await audioPlayer.play();
+    }
+  }
+  
+  Future<void> pause() async {
+    if (isVideo.value) {
+      await player.pause();
+    } else {
+      await audioPlayer.pause();
+    }
+  }
+  
+  Future<void> seek(Duration position) async {
+    if (isVideo.value) {
+      await player.seek(position);
+    } else {
+      await audioPlayer.seek(position);
+    }
+  }
+  
+  Future<void> stop() async {
+    await player.stop();
+    await audioPlayer.stop();
+    currentTitle.value = '';
+    currentThumbnail.value = '';
+    currentAudioUrl.value = '';
+    currentVideoUrl.value = '';
+  }
+
+  // Test method to verify audio output is working
+  Future<void> testAudioOutput() async {
+    try {
+      print('🧪 ========== TESTING AUDIO OUTPUT ==========');
+      
+      // Test with a simple, known-working audio file
+      const testUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+      
+      print('🧪 Loading test audio from: $testUrl');
+      await audioPlayer.setVolume(1.0);
+      final duration = await audioPlayer.setUrl(testUrl);
+      
+      print('🧪 Test audio loaded. Duration: ${duration?.inSeconds ?? 0}s');
+      print('🧪 Starting test playback...');
+      
+      await audioPlayer.play();
+      
+      await Future.delayed(const Duration(seconds: 2));
+      
+      print('🧪 Test playback state:');
+      print('   - Playing: ${audioPlayer.playing}');
+      print('   - Position: ${audioPlayer.position.inSeconds}s');
+      print('   - Volume: ${audioPlayer.volume}');
+      
+      if (audioPlayer.playing && audioPlayer.position.inSeconds > 0) {
+        print('✅ Audio output is WORKING! The issue might be with YouTube URLs.');
+        Get.snackbar(
+          'Test Success',
+          'Audio output is working! Issue might be with YouTube streams.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+      } else {
+        print('❌ Audio output test FAILED. Check Windows sound settings!');
+        Get.snackbar(
+          'Test Failed',
+          'Audio not playing. Check your Windows sound settings and output device.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 5),
+        );
+      }
+      
+      print('🧪 ========================================');
+    } catch (e) {
+      print('❌ Test audio error: $e');
+    }
+  }
+
+  @override
+  void onClose() {
+    player.dispose();
+    audioPlayer.dispose();
+    super.onClose();
+  }
+}

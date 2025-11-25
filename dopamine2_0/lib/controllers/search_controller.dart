@@ -50,12 +50,28 @@ class SearchController extends GetxController {
     }
   }
 
-  // Get stream URLs for a video
-  Future<Map<String, String?>> getStreamUrls(String videoId) async {
+  // Get stream URLs for a video with quality selection (supports 1080p, 4K, etc.)
+  Future<Map<String, String?>> getStreamUrls(String videoId, {String videoQuality = '720p'}) async {
     try {
-      return await YouTubeService.getStreamUrls(videoId);
+      // Normalize quality string (remove special labels like "(4K)" and "(2K)")
+      final normalizedQuality = videoQuality
+          .replaceAll(' (4K)', '')
+          .replaceAll(' (2K)', '');
+      
+      return await YouTubeService.getStreamUrls(videoId, videoQuality: normalizedQuality);
     } catch (e) {
+      print('Error getting stream URLs: $e');
       return {'audioUrl': null, 'videoUrl': null};
+    }
+  }
+
+  // Get available video qualities (including 1080p, 4K)
+  Future<List<String>> getAvailableQualities(String videoId) async {
+    try {
+      return await YouTubeService.getAvailableQualities(videoId);
+    } catch (e) {
+      print('Error getting available qualities: $e');
+      return ['1080p', '720p', '480p', '360p']; // Updated default fallback
     }
   }
 }

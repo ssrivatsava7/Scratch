@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:youtube_explode_dart/youtube_explode_dart.dart';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
-import 'package:media_kit/media_kit.dart';
 
 import '../../utils/controller_helper.dart';
 import '../../widgets/dopamine_app_bar.dart';
+import '../../widgets/video_quality_selector.dart';
 import '../../services/download_service.dart';
 import '../../routes/app_routes.dart';
 
@@ -31,29 +28,53 @@ class AudioPlayerScreen extends StatelessWidget {
         title: 'Audio Player',
         showHomeButton: true,
         actions: [
-          // Favorite button
-          IconButton(
-            icon: Obx(() {
-              if (args == null) return const Icon(Icons.favorite_border);
-              final videoId = args['id'] ?? args['videoId'] ?? '';
-              final isFavorite = Controllers.favorites.favorites.any(
-                (fav) => (fav['id'] == videoId || fav['videoId'] == videoId)
+          // Video quality button
+          Obx(() {
+            if (media.isVideo.value && args != null) {
+              return IconButton(
+                icon: const Icon(Icons.high_quality, color: Colors.blue),
+                onPressed: () {
+                  _showQualitySelector(args);
+                },
+                tooltip: 'Video Quality',
               );
-              return Icon(
+            }
+            return const SizedBox.shrink();
+          }),
+          // Test audio button
+          IconButton(
+            icon: const Icon(Icons.volume_up, color: Colors.amber),
+            onPressed: () {
+              media.testAudioOutput();
+            },
+            tooltip: 'Test Audio Output',
+          ),
+          // Favorite button
+          Obx(() {
+            final videoId = args != null ? (args['id'] ?? args['videoId'] ?? '') : '';
+            if (videoId.isEmpty) {
+               return IconButton(
+                 icon: const Icon(Icons.favorite_border),
+                 onPressed: () {},
+               );
+            }
+            
+            final isFavorite = Controllers.favorites.favorites.any(
+              (fav) => (fav['id'] == videoId || fav['videoId'] == videoId)
+            );
+            return IconButton(
+              icon: Icon(
                 isFavorite ? Icons.favorite : Icons.favorite_border,
                 color: isFavorite ? Colors.red : null,
-              );
-            }),
-            onPressed: () {
-              if (args != null) {
-                Controllers.favorites.toggleFavorite(args);
-              } else {
-                Get.snackbar('Error', 'No media information available',
-                  snackPosition: SnackPosition.BOTTOM);
-              }
-            },
-            tooltip: 'Toggle Favorite',
-          ),
+              ),
+              onPressed: () {
+                if (args != null) {
+                  Controllers.favorites.toggleFavorite(args);
+                }
+              },
+              tooltip: 'Toggle Favorite',
+            );
+          }),
           // Add to playlist button
           IconButton(
             icon: const Icon(Icons.playlist_add),
@@ -174,7 +195,10 @@ class AudioPlayerScreen extends StatelessWidget {
                       thumbColor: Colors.purpleAccent,
                     ),
                     child: Slider(
-                      value: media.position.value.inSeconds.toDouble(),
+                      value: media.position.value.inSeconds.toDouble().clamp(
+                        0.0, 
+                        media.duration.value.inSeconds > 0 ? media.duration.value.inSeconds.toDouble() : 1.0
+                      ),
                       max: media.duration.value.inSeconds > 0
                           ? media.duration.value.inSeconds.toDouble()
                           : 1.0,
@@ -398,68 +422,81 @@ class AudioPlayerScreen extends StatelessWidget {
     print('Video ID (cleaned): $videoId');
     print('Title: $title');
 
+    // Check if already playing or loading this media
+    if (Controllers.mediaSwitch.currentTitle.value == title && 
+        (Controllers.mediaSwitch.isPlaying.value || Controllers.mediaSwitch.isLoading.value)) {
+      print('Media already loaded/loading. Skipping initialization.');
+      return;
+    }
+
     // Update media controller with current info
     Controllers.mediaSwitch.currentTitle.value = title;
     Controllers.mediaSwitch.currentThumbnail.value = thumbnail;
     Controllers.mediaSwitch.isVideo.value = false;
-
-    // Show loading
-    Get.dialog(
-      const Center(
-        child: CircularProgressIndicator(color: Colors.purpleAccent),
-      ),
-      barrierDismissible: false,
-    );
+    Controllers.mediaSwitch.isLoading.value = true;
 
     try {
-      // Get video/audio streams
-      final yt = YoutubeExplode();
-      final manifest = await yt.videos.streamsClient.getManifest(videoId);
+      // Get available qualities first
+      final qualities = await Controllers.search.getAvailableQualities(videoId);
+      print('Available qualities: $qualities');
       
-      // Get audio stream - prefer MP4 for Windows compatibility
-      final audioStream = manifest.audioOnly.where((stream) => stream.container.name == 'mp4').isNotEmpty
-          ? manifest.audioOnly.where((stream) => stream.container.name == 'mp4').withHighestBitrate()
-          : manifest.audioOnly.withHighestBitrate();
+      // Get stream URLs with default quality (1080p)
+      final defaultQuality = qualities.isNotEmpty && qualities.first.contains('1080') 
+          ? qualities.first 
+          : (qualities.isNotEmpty ? qualities.first : '1080p');
       
-      final audioUrl = audioStream.url.toString();
+      print('Fetching streams at quality: $defaultQuality');
+      final streams = await Controllers.search.getStreamUrls(videoId, videoQuality: defaultQuality);
       
-      // Get video stream for potential switching
-      final videoStream = manifest.muxed.withHighestBitrate();
-      final videoUrl = videoStream.url.toString();
+      final audioUrl = streams['audioUrl'];
+      final videoUrl = streams['videoUrl'];
+      
+      if (audioUrl == null || videoUrl == null) {
+        throw Exception('Failed to get stream URLs');
+      }
       
       print('Audio URL: ${audioUrl.substring(0, 100)}...');
-      print('Audio format: ${audioStream.container.name}');
-      
-      yt.close();
-      
-      // Close loading dialog
-      Get.back();
+      print('Video URL: ${videoUrl.substring(0, 100)}...');
+      print('Selected quality: $defaultQuality');
 
-      // Load media using the controller
+      // Load media using the controller with quality information
       await Controllers.mediaSwitch.loadMedia(
         title: title,
         thumbnail: thumbnail,
         audio: audioUrl,
         video: videoUrl,
+        qualities: qualities,
+        artist: item['author'],
+        initialQuality: defaultQuality,
       );
       
+      print('✅ Media loaded with quality: $defaultQuality');
       print('=== AUDIO INITIALIZED SUCCESSFULLY ===');
       
     } catch (e, stackTrace) {
-      if (Get.isDialogOpen ?? false) {
-        Get.back();
-      }
-      
       print('AUDIO PLAYER: Error: $e');
       print('Stack trace: $stackTrace');
       Get.snackbar(
         'Playback Error',
-        'Failed to play audio',
+        'Failed to play audio: $e',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 5),
       );
     }
+  }
+
+  void _showQualitySelector(Map<String, dynamic> args) {
+    final videoId = args['id'] ?? args['videoId'] ?? '';
+    
+    Get.dialog(
+      VideoQualitySelector(
+        videoId: videoId,
+        onQualitySelected: (quality) {
+          print('Quality selected: $quality');
+        },
+      ),
+    );
   }
 }

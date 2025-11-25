@@ -84,50 +84,42 @@ class FavoritesScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _playMedia(Map<String, dynamic> item) async {
+  void _playMedia(Map<String, dynamic> item) {
     final media = Controllers.mediaSwitch;
     final history = Controllers.history;
 
-    Get.dialog(
-      const Center(child: CircularProgressIndicator(color: Colors.white)),
-      barrierDismissible: false,
-    );
-
     try {
-      String audioUrl = item['audioUrl'] ?? '';
-      String videoUrl = item['videoUrl'] ?? '';
-
-      if (audioUrl.contains('youtube.com') || audioUrl.contains('youtu.be')) {
-        final videoId = audioUrl.split('v=').last.split('&').first;
-        final controller = Get.find<my_search.SearchController>();
-        final streams = await controller.getStreamUrls(videoId);
-        audioUrl = streams['audioUrl'] ?? '';
-        videoUrl = streams['videoUrl'] ?? audioUrl;
-
-        item['audioUrl'] = audioUrl;
-        item['videoUrl'] = videoUrl;
+      // Extract video ID
+      String videoId = item['id'] ?? item['videoId'] ?? '';
+      
+      // If ID is missing but URL is present, extract from URL
+      if (videoId.isEmpty) {
+          final url = item['videoUrl'] ?? item['audioUrl'] ?? '';
+          if (url.contains('v=')) {
+              videoId = url.split('v=').last.split('&').first;
+          }
       }
 
-      Get.back();
-
-      if (audioUrl.isEmpty) {
-        Get.snackbar('Error', 'Could not get audio stream',
-            snackPosition: SnackPosition.BOTTOM);
-        return;
+      if (videoId.isEmpty) {
+          Get.snackbar('Error', 'Invalid media ID', snackPosition: SnackPosition.BOTTOM);
+          return;
       }
 
       history.addToHistory(item);
 
-      media.loadMedia(
+      // Navigate immediately
+      Get.toNamed(Routes.AUDIO_PLAYER, arguments: item);
+
+      // Load media in background
+      media.loadMediaFromId(
+        videoId: videoId,
         title: item['title'] ?? '',
         thumbnail: item['thumbnail'] ?? '',
-        audio: audioUrl,
-        video: videoUrl,
+        author: item['author'] ?? '',
+        isVideoMode: false,
       );
 
-      Get.toNamed(Routes.AUDIO_PLAYER, arguments: item);
     } catch (e) {
-      Get.back();
       Get.snackbar('Error', 'Failed to load media: $e',
           snackPosition: SnackPosition.BOTTOM);
     }

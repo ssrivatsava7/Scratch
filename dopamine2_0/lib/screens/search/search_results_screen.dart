@@ -192,66 +192,41 @@ class SearchResultsScreen extends StatelessWidget {
   // -----------------------------------------------------
   // OPEN AUDIO
   // -----------------------------------------------------
-  void _openAudio(dynamic item) async {
+  void _openAudio(dynamic item) {
     final media = Get.find<MediaSwitchController>();
     final history = Get.find<HistoryController>();
-
-    // Show loading
-    Get.dialog(
-      const Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      ),
-      barrierDismissible: false,
-    );
 
     try {
       // Extract video ID from URL
       final videoId = item.videoUrl.split('v=').last.split('&').first;
       
-      // Get actual stream URLs
-      final controller = Get.find<my_search.SearchController>();
-      final streams = await controller.getStreamUrls(videoId);
-      
-      final audioUrl = streams['audioUrl'];
-      final videoUrl = streams['videoUrl'];
-
-      Get.back(); // Close loading dialog
-
-      if (audioUrl == null || audioUrl.isEmpty) {
-        Get.snackbar(
-          'Error',
-          'Could not get audio stream',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-        return;
-      }
-
       final mapData = {
         "id": item.videoUrl,
         "title": item.title,
         "thumbnail": item.thumbnailUrl,
         "author": item.channelName,
-        "audioUrl": audioUrl,
-        "videoUrl": videoUrl ?? audioUrl,
+        "audioUrl": item.videoUrl, // Placeholder
+        "videoUrl": item.videoUrl, // Placeholder
       };
 
       history.addToHistory(mapData);
 
-      media.loadMedia(
+      // Navigate immediately
+      Get.toNamed(Routes.AUDIO_PLAYER, arguments: mapData);
+
+      // Load media in background
+      media.loadMediaFromId(
+        videoId: videoId,
         title: item.title,
         thumbnail: item.thumbnailUrl,
-        audio: audioUrl,
-        video: videoUrl ?? audioUrl,
+        author: item.channelName,
+        isVideoMode: false,
       );
 
-      Get.toNamed(Routes.AUDIO_PLAYER, arguments: mapData);
     } catch (e) {
-      Get.back(); // Close loading dialog
       Get.snackbar(
         'Error',
-        'Failed to load media: $e',
+        'Failed to open audio: $e',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
@@ -262,69 +237,41 @@ class SearchResultsScreen extends StatelessWidget {
   // -----------------------------------------------------
   // OPEN VIDEO
   // -----------------------------------------------------
-  void _openVideo(dynamic item) async {
+  void _openVideo(dynamic item) {
     final media = Get.find<MediaSwitchController>();
     final history = Get.find<HistoryController>();
-
-    // Show loading
-    Get.dialog(
-      const Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      ),
-      barrierDismissible: false,
-    );
 
     try {
       // Extract video ID from URL
       final videoId = item.videoUrl.split('v=').last.split('&').first;
       
-      // Get actual stream URLs
-      final controller = Get.find<my_search.SearchController>();
-      final streams = await controller.getStreamUrls(videoId);
-      
-      final audioUrl = streams['audioUrl'];
-      final videoUrl = streams['videoUrl'];
-
-      Get.back(); // Close loading dialog
-
-      if (videoUrl == null || videoUrl.isEmpty) {
-        Get.snackbar(
-          'Error',
-          'Could not get video stream',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-        return;
-      }
-
       final mapData = {
         "id": item.videoUrl,
         "title": item.title,
         "thumbnail": item.thumbnailUrl,
         "author": item.channelName,
-        "audioUrl": audioUrl ?? videoUrl,
-        "videoUrl": videoUrl,
+        "audioUrl": item.videoUrl, // Placeholder
+        "videoUrl": item.videoUrl, // Placeholder
       };
 
       history.addToHistory(mapData);
 
-      media.loadMedia(
+      // Navigate immediately
+      Get.toNamed(Routes.VIDEO_PLAYER, arguments: mapData);
+
+      // Load media in background
+      media.loadMediaFromId(
+        videoId: videoId,
         title: item.title,
         thumbnail: item.thumbnailUrl,
-        audio: audioUrl ?? videoUrl,
-        video: videoUrl,
+        author: item.channelName,
+        isVideoMode: true,
       );
 
-      // Switch to video mode
-      await media.switchToVideo();
-
-      Get.toNamed(Routes.VIDEO_PLAYER, arguments: mapData);
     } catch (e) {
-      Get.back(); // Close loading dialog
       Get.snackbar(
         'Error',
-        'Failed to load video: $e',
+        'Failed to open video: $e',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
